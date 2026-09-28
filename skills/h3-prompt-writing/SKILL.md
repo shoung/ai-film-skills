@@ -33,3 +33,4 @@ Read `references/ref-en.txt` for label rules, retention analysis, and complete e
 - Write rewrite sections in English; preserve dialogue, lyrics, and visible scene text in their original language.
 - Describe each shot by composition, subjects, environment, actions, camera, sound, and the exact point where referenced content appears.
 - Avoid plot summaries, unresolved reference labels, and timing that does not match the requested duration.
+

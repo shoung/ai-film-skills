@@ -146,7 +146,7 @@ When the same line of dialogue or lyrics crosses a cut, use `<scenetrans>` at th
 Place any banner, sign, label, subtitle, or neon text that is actually visible on screen in English double quotation marks. Preserve the original text and punctuation verbatim, without translation.
 
 ```text
-A red neon sign reading "营业中" glows above the doorway.
+A red neon sign reading "營業中" glows above the doorway.
 ```
 
 ### 4.6 overall_soundscape
@@ -220,3 +220,4 @@ overall_soundscape: Fingertips tap the glass before it scrapes across the tablet
 
 non_diegetic_music: A low electronic pulse at a slow tempo, ending immediately after the glass breaks.
 ```
+

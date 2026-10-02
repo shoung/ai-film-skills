@@ -12,6 +12,7 @@ compatibility: Portable to any agent that can read local files — no external A
 2. For base text/keyframe modes, read `references/base-en.txt` and follow its final prompt structure.
 3. For full-reference mode, read `references/ref-en.txt` and follow its six-section rewrite format.
 4. Preserve the exact field names, section order, labels, and timing notation from the selected guide.
+5. Before writing or revising character performance in any mode, read [Shared Performance Control](references/performance-control.md) in full. Apply it inside the existing shot description, not as a new top-level field. This same guide also applies to Seedance; it does not replace either model's format.
 
 ## Base Modes
 
@@ -33,4 +34,7 @@ Read `references/ref-en.txt` for label rules, retention analysis, and complete e
 - Write rewrite sections in English; preserve dialogue, lyrics, and visible scene text in their original language.
 - Describe each shot by composition, subjects, environment, actions, camera, sound, and the exact point where referenced content appears.
 - Avoid plot summaries, unresolved reference labels, and timing that does not match the requested duration.
+- Build each performance beat from the character's objective and starting state through an exact dialogue word, physical event, visible change, or sound cue into breath/pause, observable facial/body response, and an ending state. State what must not react prematurely. Emotional labels alone are insufficient.
+- For a shift of attention, let the eyes acquire the target before the head follows. Select readable eyelid, mouth, jaw, shoulder, or finger cues appropriate to the framing; do not stack every cue, invent pupil trembling, or add tears without script support.
+- Keep performance directions outside `<d>` and integrate their timing into `integrated_multimodal_description` (base modes) or `detailed_description` (Ref2VA). Preserve the selected guide's language, dialogue, speaker-ID, reference, and keyframe rules.
 

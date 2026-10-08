@@ -2,6 +2,8 @@
 
 This guide explains how rewrite outputs are organized and written in full-reference mode.
 
+> Current delivery override: read concise-format.md and format-example.md first. They override older verbosity, prose-language and timing-precision examples below. Preserve all required model fields, mode distinctions, reference labels and dialogue syntax. Narrative times default to multiples of 0.5 seconds.
+
 Write all six rewrite sections in English. Preserve the original language only for dialogue and lyrics inside `<d>` and for text visibly present in the scene.
 
 **Description detail:** Make `detailed_description` as detailed and explicit as possible. For each shot, clearly establish the current composition, subject appearance and position, environment and lighting, actions and state changes, camera movement, current sound, and the points where referenced content actually appears or takes effect. Avoid reducing the description to a plot summary or a list of reference relationships.

@@ -2,6 +2,8 @@
 
 ## 1. Task Overview
 
+> Current delivery override: read concise-format.md and format-example.md first. They override older verbosity, prose-language and timing-precision examples below. Preserve required model fields, reference labels, dialogue syntax and mode distinctions. Narrative times default to multiples of 0.5 seconds.
+
 - **T2VA**: Builds a complete audiovisual timeline from text.
 - **I2VA**: T2VA body + first-frame instruction + a visual path that develops forward from the first frame.
 - **FL2VA**: T2VA body + first-and-last-frame instruction + a continuous path from the first frame to the last frame.

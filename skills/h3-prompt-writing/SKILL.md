@@ -6,12 +6,17 @@ compatibility: Portable to any agent that can read local files — no external A
 
 # H3 Prompt Writing
 
+## Current delivery format
+
+Read [concise formatting and half-second timing](references/concise-format.md) first. It overrides conflicting verbosity, timing precision, and default language examples in the older guides. Use the user's requested language for prose (Traditional Chinese in this workspace); retain model field names, labels, speaker IDs and dialogue syntax. Read the [anonymized short example](references/format-example.md) for format only, not story content.
+
+
 ## Workflow
 
 1. Identify the input mode: T2VA, I2VA, FL2VA, L2VA, or full-reference Ref2VA.
 2. For base text/keyframe modes, read `references/base-en.txt` and follow its final prompt structure.
 3. For full-reference mode, read `references/ref-en.txt` and follow its six-section rewrite format.
-4. Preserve the exact field names, section order, labels, and timing notation from the selected guide.
+4. Preserve the exact field names, section order and reference/dialogue labels from the selected guide. Apply concise-format.md to timing and layout; narrative boundaries use 0.5-second increments. Keep request duration compatible with the verified interface separately.
 5. Before writing or revising character performance in any mode, read [Shared Performance Control](references/performance-control.md) in full. Apply it inside the existing shot description, not as a new top-level field. This same guide also applies to Seedance; it does not replace either model's format.
 
 ## Base Modes
@@ -31,7 +36,7 @@ Read `references/ref-en.txt` for label rules, retention analysis, and complete e
 
 ## Output Rules
 
-- Write rewrite sections in English; preserve dialogue, lyrics, and visible scene text in their original language.
+- Write prose in the user's requested language; preserve dialogue, lyrics, and visible scene text verbatim. English field names and control syntax remain unchanged.
 - Describe each shot by composition, subjects, environment, actions, camera, sound, and the exact point where referenced content appears.
 - Avoid plot summaries, unresolved reference labels, and timing that does not match the requested duration.
 - Build each performance beat from the character's objective and starting state through an exact dialogue word, physical event, visible change, or sound cue into breath/pause, observable facial/body response, and an ending state. State what must not react prematurely. Emotional labels alone are insufficient.

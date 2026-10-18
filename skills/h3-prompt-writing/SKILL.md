@@ -6,6 +6,10 @@ compatibility: Portable to any agent that can read local files — no external A
 
 # H3 Prompt Writing
 
+## Storyboard tables
+
+When the user requests a storyboard table, read the local [eight-column format](references/storyboard-table-format.md) and [table template](references/storyboard-table-template.md). Use their fixed column names and order, one row per shot. For a table-only task, finish in this branch without starting the model-prompt rewrite workflow below. This production table does not replace H3's mode-specific fields, section order, dialogue syntax, or reference labels. Do not append a table when the user only requests H3 prompt text. A table's visual/frame draft must not be presented as a complete H3 audiovisual request.
+
 ## Current delivery format
 
 Read [concise formatting and half-second timing](references/concise-format.md) first. It overrides conflicting verbosity, timing precision, and default language examples in the older guides. Use the user's requested language for prose (Traditional Chinese in this workspace); retain model field names, labels, speaker IDs and dialogue syntax. Read the [anonymized short example](references/format-example.md) for format only, not story content.

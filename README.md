@@ -33,6 +33,10 @@
 
 4. 建議依序使用：`screenplay-framework` → `screenplay-doctor` → `screenplay-writing`；需要影像製作時，再接續使用 `visual-asset-prompts` 與 `video-prompts`。
 
+## 分鏡表格式
+
+分鏡表固定使用八欄：編號、畫面描述、攝影機描述、聲音描述、旁白對白、時長、影片生成方式、畫面prompt，每鏡一列。欄位說明與可複用模板位於各相關 skill 的 `references/storyboard-table-format.md`、`references/storyboard-table-template.md`；`screenplay-director`、`video-prompts` 與 `h3-prompt-writing` 各自附完整本地副本，可獨立讀取。分鏡表不改變 Seedance 或 H3 的模型專用提示詞格式。
+
 ## 來源與署名
 
 本倉庫所收錄 skills 的共同來源與署名為：**Elio_AIGC（抖音／B站）**。

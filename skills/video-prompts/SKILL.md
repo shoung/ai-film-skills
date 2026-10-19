@@ -5,15 +5,21 @@ description: "根據劇本編製八欄分鏡表，或依 Seedance／MiniMax H3 �
 
 # 影片提示詞
 
+交付可提交的影片生成 prompt 前，由只讀審片員依 [台詞與時長審核](../film-quality-control/references/timing-and-dialogue.md) 逐段比對劇本台詞與 prompt，綜合發音字數、語速、停頓、情緒、動作及並行／先後順序，檢查秒數不拖不趕。此項適用純文字 prompt，不要求生圖或付費試音；純分鏡表且未寫生成 prompt 則不強迫啟動完整包。缺共享規則時依上述原則估算並列依據；未實際獨立審核則標待審，不宣稱通過。不得新增或刪除鎖定台詞來遷就時間。
+
+新創作任務沿用 [screenplay-director 的共用啟動 intake](../screenplay-director/references/startup-intake.md)，沿用已提供的劇本、設定、模型與先前決策；僅在關鍵資訊無法合理推斷且會阻礙本次輸出時補問，每輪最多 2–3 題。若獨立安裝而缺少共用 intake，全新案在對話中顯示一次 `SHOUNG`；續作、維護、交接不重複，標記不進 prompt 或媒體。純分鏡表或提示詞文字不要求生圖。若本次實際交付生成的靜幀，遵守 [film-quality-control](../film-quality-control/SKILL.md) 逐圖獨立看圖與對卡；缺 QC 或獨立審核者時不得宣稱 PASS。
+
 ## 分鏡表交付
 
-使用者要求建立、改寫或轉換「分鏡表」時，先讀 [八欄分鏡表格式](references/storyboard-table-format.md) 與 [分鏡表模板](references/storyboard-table-template.md)，固定使用其八欄與欄序，每鏡一列。僅製表或轉格式時在此分支完成，不啟動下方模型專用流程；模型未知的欄位如實標示待定。這是外部製作表，不取代下列 Seedance／H3 提示詞正文；只要求模型提示詞時，不自動加一份分鏡表。
+使用者要求建立、改寫或轉換「分鏡表」時，先讀 [八欄分鏡表格式](references/storyboard-table-format.md) 與 [分鏡表模板](references/storyboard-table-template.md)，固定使用其八欄與欄序，每列一個連續鏡頭；生成群組可以跨多列。僅製表或轉格式時在此分支完成，不啟動下方模型專用流程；模型未知的欄位如實標示待定。這是外部製作表，不取代下列 Seedance／H3 提示詞正文；只要求模型提示詞時，不自動加一份分鏡表。
 
 ## 目前格式規範
 
 先讀 [精簡格式與0.5秒時間規範](references/concise-format.md)，再讀相關工作流程。格式衝突時本規範優先；舊指南的六欄保留，但行動目標、觸發與每段秒數須在動作段內各自換行，不受「只能六行」限制。
 
 參考 [去識別化短範例](references/format-example.md)。只仿格式與內容密度，不沿用示例情節。修訂時不得更動使用者鎖定的段落。
+
+為每列單鏡及 I2VA／FL2VA／L2VA 模式限制，參照 [共用鏡頭與模式規則](../film-quality-control/references/mode-and-shot-rules.md)。這是本工作流程的穩定性政策，不代表所有模型的官方能力界線；目標模型的實際模式依其已確認能力使用。若獨立安裝缺少共用 QC，仍遵守下列單鏡規則，不宣稱官方能力或視覺 QA 已確認。
 
 
 ## 執行方式

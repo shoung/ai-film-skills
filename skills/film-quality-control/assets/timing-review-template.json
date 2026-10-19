@@ -1,0 +1,12 @@
+{
+  "reviewer_id": "",
+  "reviewer_role": "independent_qa",
+  "status": "pending",
+  "generation_sha256": "",
+  "checks": {
+    "dialogue_alignment": "pending",
+    "delivery_feasibility": "pending",
+    "pace_balance": "pending"
+  },
+  "evidence": []
+}

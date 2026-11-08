@@ -1,0 +1,14 @@
+{
+  "reviewer_id": null,
+  "reviewer_role": "independent_qa",
+  "status": "pending",
+  "prompt_sha256": null,
+  "checks": {
+    "grouping": "pending",
+    "self_contained": "pending",
+    "reference_binding": "pending",
+    "readability": "pending"
+  },
+  "production_evidence": [],
+  "isolation_evidence": []
+}

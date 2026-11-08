@@ -11,6 +11,7 @@ HERE = Path(__file__).resolve().parent
 SCRIPTS = HERE.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 from validate_package import generation_signature, validate_package
+from prompt_checks import prompt_signature
 
 
 class PackageValidatorTests(unittest.TestCase):
@@ -78,6 +79,16 @@ class PackageValidatorTests(unittest.TestCase):
                 "scene": "pass", "continuity": "pass", "prompt_alignment": "pass",
             },
             "evidence": [frame["path"]],
+        }
+
+    def attach_prompt_review_fixture(self, generation, assets):
+        evidence = self.root / 'synthetic-prompt-review.txt'
+        evidence.write_text('Synthetic unit-test evidence only; not an actual review.')
+        generation['prompt_review'] = {
+            'reviewer_id': 'prompt-qa-fixture', 'reviewer_role': 'independent_qa', 'status': 'pass',
+            'prompt_sha256': prompt_signature(generation, {asset['id']: asset for asset in assets}),
+            'checks': {key: 'pass' for key in ('grouping', 'self_contained', 'reference_binding', 'readability')},
+            'production_evidence': [evidence.name], 'isolation_evidence': [evidence.name],
         }
 
     def test_single_shot_fl_is_valid(self):
@@ -294,6 +305,7 @@ class PackageValidatorTests(unittest.TestCase):
                                          "checks": {"dialogue_alignment": "pass", "delivery_feasibility": "pass", "pace_balance": "pass"},
                                          "evidence": [first["path"]]}}
         generation["timing_review"]["generation_sha256"] = generation_signature(generation)
+        self.attach_prompt_review_fixture(generation, [first, last, card])
         first_review = self.valid_review("s1", first, [card], neighbor_frames={"fl-last": last["sha256"]})
         last_review = self.valid_review("s1", last, [card], neighbor_frames={"fl-first": first["sha256"]})
         last_review["id"] = "review-s1-last"
@@ -429,6 +441,7 @@ class PackageValidatorTests(unittest.TestCase):
             },
         }
         generation["timing_review"]["generation_sha256"] = generation_signature(generation)
+        self.attach_prompt_review_fixture(generation, [frame, card])
         return self.package(assets=[frame, card], shots=[shot], generations=[generation], reviews=[visual_review])
 
     def test_complete_timing_review_passes_delivery(self):

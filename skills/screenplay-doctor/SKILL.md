@@ -5,6 +5,11 @@ description: "對劇本、大綱、單集、單場或單點問題進行多視角
 
 # 劇本醫生
 
+## 文本創作分流（Writing Provider Routing）
+
+本技能涉及之多視角圓桌會診分析、診斷報告撰寫與實質修改任務清單產出，優先路由至 Google Antigravity CLI（`agy`），由 Codex 負責任務編排與報告格式檢驗，不逕自代筆撰寫診斷結論與創意修改方案。詳見 [antigravity-writer](../antigravity-writer/SKILL.md)。
+- **降級與防遞迴**：若已在 Antigravity 內部執行，直接產出會診報告，嚴禁遞迴調用；若未安裝 writer 輔助腳本但存在 `agy` 命令，直接執行無頭調用；僅在 CLI 未安裝或確認配額耗盡時降級至 Codex。遇驗證、權限或網路錯誤應阻擋回報，不隱蔽替換。
+
 ## 執行方式
 
 1. 完整讀取 [原始工作流程](references/3.劇本醫生 · 圓桌會診 Skill v1.0.txt) 後，依其規則執行；長檔需分段讀完，不得以截斷內容代替全文。
@@ -22,6 +27,6 @@ description: "對劇本、大綱、單集、單場或單點問題進行多視角
 - 臺詞專家：[dialogue-expert](../dialogue-expert/SKILL.md)
 - 視覺資產：[visual-asset-prompts](../visual-asset-prompts/SKILL.md)
 - 影片提示詞：[video-prompts](../video-prompts/SKILL.md)
+- 文字寫作分流：[antigravity-writer](../antigravity-writer/SKILL.md)
 
 需要交接時讀取對應入口，不要僅根據技能名稱模擬其完整規則。
-

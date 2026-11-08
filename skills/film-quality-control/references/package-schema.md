@@ -1,42 +1,29 @@
 # 資產／鏡頭／生成／QA 登錄
 
-登錄檔是八欄分鏡表的旁表。鏡號穩定，依實際順序排列；插鏡可用 S002A，不必為修一鏡重編全部。只登錄本次正式交付版本，歷史候選另存；不要把未選用候選列進當次正式包。版號與 SHA-256 一起使用，不能只依賴檔名「final」。
-
-`package.json` 採 UTF-8。檔案路徑可絕對或相對；相對以 package 所在資料夾為根。模板的空陣列適用純文字任務，補入真實圖像與真實審核後才是視覺包，不填虛構 hash／QA。
+登錄檔為八欄分鏡表旁表。鏡號穩定，依實際順序排列；插鏡使用 S002A，不必為修一鏡重編全表。只登錄本次正式交付版本，未選用候選不列入當次正式包。版號與 SHA-256 並用。`package.json` 採 UTF-8，相對路徑以 package.json 所在目錄為根。空陣列適用純文字任務，補入真實圖像與審核後才是視覺包，不填虛構 hash／QA。純提示詞任務不要求圖片 QA，分鏡表尚未撰寫提示詞時可留空 generations。
 
 ## assets
-
 每項包含 `id`、`role`、`path`、`version`、`sha256`。
-
-- role：`character_card`、`scene_card`、`prop_card`、`frame`。服裝／妝造卡也以 character_card 登錄，id 區分其用途與狀態。
-- 正式卡加 `approved: true`，表示有實際批准依據；可另附 `approval_source` 記錄對話或檔案位置。不能因為程式要求而代填批准。
-- frame 加 `producer_id`，是產圖代理的真實識別（或使用者／外部來源識別）。獨立 QA 身份不得相同，未知來源先釐清，不以留空規避。
-- 可附 `dimensions`、`outfit_state`、`scene_state`、`notes` 供人工核對；目前檢查器不讀取圖像像素或辨識臉部，尺寸仍須實際查圖。
+- `role`：`character_card`、`scene_card`、`prop_card`、`frame`。服裝／妝造卡亦以 character_card 登錄，id 區分其用途與狀態。
+- 正式卡加 `approved: true`，表示有實際批准依據；可另附 `approval_source` 記錄對話或檔案位置。不可代填批准。
+- frame 加 `producer_id`，為產圖代理（或使用者／外部來源）之真實識別。獨立 QA 身份不得與 producer_id 相同，未知來源應先釐清，不可留空規避。
+- 可附 `dimensions`、`outfit_state`、`scene_state`、`notes` 供人工核對；檢查器不辨識圖像像素或臉部，尺寸需實際查圖。
 
 ## shots
-
-每項包含 `id`、`reference_asset_ids`；有交付靜幀時加 `frame_asset_id`。同一鏡有首尾兩張或其他關鍵幀時，以主幀在前，將其他幀按時間排序列入 `additional_frame_asset_ids`。這些仍是同一鏡，不能為了存尾幀憑空加一個 Shot。每張幀均須接受獨立 QA。
-
-`duration_seconds`、`outfit_state`、`scene_state`、`continuity_notes` 可附加。`reference_asset_ids` 應列出該鏡正式角色／服裝／妝造／場景／道具依據，避免只把圖列進 assets 卻未綁定鏡頭。
-
-有正式 frame 的鏡頭在交付前至少須綁定一份正式卡；空 references 或只列其他 frame 不能代替正式依據。這只是機讀最低門檻：若圖有人物卻只有場景卡，獨立 QA 仍應因缺身份依據列待審，不能因腳本檢查到「有一份卡」就自動通過。
-
-不是每張圖都適合首幀。作為身份卡的正視照不能直接當作劇情起始畫面；分鏡圖若只供構圖參考，生成群組也要明寫 composition_reference，不能標作 first_frame。
+每項包含 `id`、`reference_asset_ids`；交付靜幀時加 `frame_asset_id`。
+- 同一鏡有首尾兩張或其他關鍵幀時，以主幀在前，其他幀按時間排序列入 `additional_frame_asset_ids`，仍屬同鏡，不可為存尾幀憑空新增鏡號。每張幀均須接受獨立 QA。
+- `duration_seconds`、`outfit_state`、`scene_state`、`continuity_notes` 可附加。`reference_asset_ids` 應列出該鏡正式依據，避免僅將圖列入 assets 卻未綁定鏡頭。
+- 有正式 frame 的鏡頭在交付前至少須綁定一份正式卡；空 references 或僅列其他 frame 不能代替正式依據（若圖有人物卻僅有場景卡，獨立 QA 仍應因缺身份依據列為待審）。
+- 不是每張圖都適合首幀。正視身份卡不能直接當作劇情起始畫面；分鏡圖若僅供構圖參考，應標註為 composition_reference，不能標為 first_frame。
 
 ## generations
-
-每項包含 `id`、`mode`、`shot_ids`、`image_inputs`、`prompt`。交付前另填 `duration_seconds`（指定生成段秒數）、`producer_id`（prompt 製作者身份）與 `timing_review`。
-
-- mode：`T2VA`、`I2VA`、`FL2VA`、`L2VA`、`Ref2VA`。可用性仍按目標模型確認。
-- shot_ids 是所涵蓋的有序鏡號；一次多鏡生成仍逐鏡對齊。
-- image_inputs 每項含 `asset_id`、`role`，以及模型需要的 `label`（例如 Picture 1）。role：`first_frame`、`last_frame`、`identity_reference`、`scene_reference`、`prop_reference`、`composition_reference`。
-- prompt 保存本次可提交的完整正文；另外附模型、聲音、設定等 metadata 不影響既有格式。
-
-`timing_review` 格式：
-
+每項包含 `id`、`mode`（`T2VA`、`I2VA`、`FL2VA`、`L2VA`、`Ref2VA`）、`shot_ids`、`prompt`、`duration_seconds`、`producer_id`。純提示詞任務不要求圖片 QA，但須逐段進行台詞時長與提示詞審核；若僅有分鏡表而尚未撰寫 prompt，可保持 `generations: []`。
+- **image_inputs**：每項含 `asset_id`、`role`（`first_frame`、`last_frame`、`identity_reference`、`scene_reference`、`prop_reference`、`composition_reference`）及模型所需 `label`（如 Picture 1；正文引用時必填，未引用可選）。H3 `<Subject N>` 定義由提交之 `<Picture N>` 解析。音訊／視訊參考若 package schema 尚未機讀支援，應列為待人工審核之警示並附證據，嚴禁偽報為圖片資產；機器警示需人工情境證據判定，非一律硬性阻擋。
+- **text_reference_bindings**：陣列項為 `{label, asset_id}`，供正文 `@alias` 綁定；其 `asset_id` 必須已在 `image_inputs` 中明確宣告。台詞中提及前鏡純屬劇情文本，不可視為元數據引用。
+- **timing_review**：格式如下：
 ```json
 {
-  "reviewer_id": "真實獨立QA身份",
+  "reviewer_id": "真實獨立QA識別",
   "reviewer_role": "independent_qa",
   "status": "pending",
   "generation_sha256": "審核當時的段落簽章",
@@ -48,15 +35,29 @@
   "evidence": ["qa/G001-timing.md"]
 }
 ```
+簽章計算使用 `generation_signature(generation)`：涵蓋 `{prompt, duration_seconds, shot_ids}`，以 `json.dumps(obj, sort_keys=True, ensure_ascii=False, separators=(',', ':'))` 編碼為 UTF-8 計算 SHA-256。三項 checks 均 pass 方可合格，審核者不得與 producer_id 相同。
 
-完成獨立 [時長審核](timing-and-dialogue.md) 後才可把對應項目設為 pass；審核者不能與 producer_id 相同。使用 `generation_signature(generation)` 計算簽章：把 `{prompt,duration_seconds,shot_ids}` 以 `json.dumps(sort_keys=True, ensure_ascii=False, separators=(',', ':'))` 編碼為 UTF-8，計算 SHA-256。檢查器會核對簽章，避免改了台詞或秒數後沿用舊審核；改動其他動作語意也因 prompt 改變而失效。
-
-純提示詞不要求圖片 QA，但仍須逐段台詞／時長審核；只有分鏡表且尚未撰寫生成 prompt 時，可留空 generations，不製造假審核。單元測試以人工 fixture 驗證資料規則，不能視為真人或成片語速實測。
+- **prompt_review**：雙軌審核紀錄，交付模式必填：
+```json
+{
+  "reviewer_id": "真實獨立QA識別",
+  "reviewer_role": "independent_qa",
+  "status": "pending",
+  "prompt_sha256": "簽章雜湊",
+  "checks": {
+    "grouping": "pending",
+    "self_contained": "pending",
+    "reference_binding": "pending",
+    "readability": "pending"
+  },
+  "production_evidence": ["qa/G001-production.md"],
+  "isolation_evidence": ["qa/G001-isolation.md"]
+}
+```
+簽章合約：`from prompt_checks import prompt_signature`，傳入 generation 與 `assets_by_id` 字典。雜湊涵蓋 `prompt`、`duration_seconds`、`mode`、`shot_ids`、`image_inputs`、`text_reference_bindings`，以及實際提交資產的 `submitted_asset_hashes: {asset_id: sha256}`。採用 `json.dumps(obj, sort_keys=True, separators=(',', ':'), ensure_ascii=False, allow_nan=False).encode('utf-8')` 計算 SHA-256。4 項 checks 通過且 `reviewer_id != producer_id` 方可為 pass。模板保留 null/pending，不填入虛構 pass。
 
 ## reviews
-
-最終通過紀錄包含以下欄位。未完成審核可先用待審模板保存，但 `--delivery` 不接受其為通過證據。
-
+靜幀交付通過紀錄包含以下欄位：
 ```json
 {
   "id": "QA-S001-v1",
@@ -75,15 +76,11 @@
   "evidence": ["qa/QA-S001-v1.md"]
 }
 ```
-
-上例是欄位說明，示意字串不能提交成真實結果。`frame_asset_id` 必須屬於該鏡的主幀或 additional 幀；省略時沿用該鏡主幀。`viewed_assets` 包含該鏡所有正式 reference_asset_ids 與審核當時的 SHA。
-
-按鏡序、再按同鏡幀序將正式幀展開；`neighbor_frames` 包含其中前後最近已提供的靜幀，包含同一鏡的首尾幀，序列首尾只需實際存在的一側。這同時檢查鏡內首尾一致性及跨鏡接續。frame_sha256 記錄被審的當前圖。N/A 寫成 `{"status":"not_applicable","reason":"無人物的地毯污漬特寫"}`，不可沒有理由。逐項觀察與工具看圖證據保存為 evidence 指向的檔案。
-
-修改卡或鄰鏡時，新的實際 hash 使舊視覺審核失效。換 prompt 而改變說話者、動作起點、鏡位、鏡序或參考綁定時，也必須人工使圖像審核的 prompt_alignment 退回待審；時長審核則另由 generation_sha256 檢查失效。本版不自動辨識所有文字與圖像語意。不要用重算 hash 後直接覆蓋舊 QA 的方式假造重審。
+- `frame_asset_id` 必須屬於該鏡主幀或 additional 幀；省略時預設沿用該鏡主幀。
+- `viewed_assets` 包含該鏡所有正式 reference_asset_ids 與審核當時的 SHA。
+- 鄰幀展開邏輯：按鏡序、再按同鏡幀序將正式幀展開（flatten shots then frames）；`neighbor_frames` 包含其中前後最近已提供的靜幀（包含同一鏡首尾幀，序列首尾只需實際存在的一側）。
+- N/A 寫成 `{"status":"not_applicable","reason":"無人物的道具特寫說明"}`，不可沒有理由。
+- 修改卡片或換 prompt 改變語意（說話者、動作起點、鏡位、鏡序或參考綁定）時，必須手動使圖像審核之 `prompt_alignment` 退回待審；時長與提示詞審核則由相應簽章檢查失效，嚴禁直接覆蓋舊 hash 假造審核。
 
 ## 檢查器的實際邊界
-
-`scripts/validate_package.py` 以 Python 標準函式庫實作，檢查連結、模式、部分切鏡語句、檔案／SHA 與審核紀錄是否完整且仍適用。`--delivery` 需要圖像包的所有正式 assets 存在，卡片已核准、圖有獨立審核與實際證據路徑。
-
-它不辨識圖片內容、不證實使用者的批准、不證實紀錄中的代理真實存在，也不取代讀 prompt 全文；這些由主代理核實。退出碼 0 的意思是「該範圍的機讀檢查通過」，不能寫成「臉部一致性已由程式認證」。
+`scripts/validate_package.py` 以標準函式庫驗證連結、模式、切鏡語句、檔案／SHA 與簽章合約。草稿模式未附 `prompt_review` 或簽章不符發出 Warning；`--delivery` 模式強制要求正式 assets 存在、卡片已核准、frame 及 prompt 有獨立 pass 審核與證據檔案。機器警告需人工情境證據判定，非一律硬性阻擋。純提示詞審查不要求媒體生成。退出碼 0 代表機讀格式合規，不取代語意與畫質實質審核。所有範例均為合成格式示範，非執行通過紀錄。

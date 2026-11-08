@@ -1,41 +1,42 @@
-# Video Prompt Writing Guide (T2VA / I2VA / FL2VA / L2VA)
+# H3 基礎模式提示詞撰寫指南 (T2VA / I2VA / FL2VA / L2VA)
 
-## 1. Task Overview
+> 來源規範：H3 Video Prompt Writing Guide。本指南規範基礎模式之提示詞結構、鏡頭語法與生成請求邊界。
+> 實務範例與精簡指引：請參閱同目錄 `concise-format.md`、`performance-control.md` 與 `format-example.md`。
 
-> Current delivery override: read concise-format.md and format-example.md first. They override older verbosity, prose-language and timing-precision examples below. Preserve required model fields, reference labels, dialogue syntax and mode distinctions. Narrative times default to multiples of 0.5 seconds.
+## 1. 任務概述與模式定位
 
-- **T2VA**: Builds a complete audiovisual timeline from text.
-- **I2VA**: T2VA body + first-frame instruction + a visual path that develops forward from the first frame.
-- **FL2VA**: T2VA body + first-and-last-frame instruction + a continuous path from the first frame to the last frame.
-- **L2VA**: T2VA body + last-frame instruction + a path that converges from a plausible preceding state to the last frame.
+- **T2VA (Text-to-Video-Audio)**：由文字建構完整視聽時間軸，支援單鏡頭或多鏡頭連續敘事。
+- **I2VA (Image-to-Video-Audio)**：首幀對齊指令 + 從 `<Picture 1>` 起始向前發展的單一連續鏡頭。
+- **FL2VA (First-and-Last-Frame-to-Video-Audio)**：首尾幀對齊指令 + 連接 `<Picture 1>` 與 `<Picture 2>` 之間的連續動態軌跡。
+- **L2VA (Last-Frame-to-Video-Audio)**：尾幀對齊指令 + 從合理前置狀態收斂至 `<Picture 1>` 終止畫面的單一連續鏡頭。
 
-## 2. Final Prompt Structure
+## 2. 生成請求獨立性、分組原則與工作流邊界
 
-### 2.1 Part One Is the Instruction
+1. **生成請求為基本組織單元**：每個提示詞請求皆為獨立的生成與控制單元，單一請求可包含單個或多個鏡頭。分鏡表（Storyboard）維持八欄標準結構，每行對應一個連續鏡頭。
+2. **審慎分組決策**：鏡頭分組應依據敘事因果、情節節奏、時長可行性、模型與介面之驗證能力、資產依賴清晰度，以及控制與重試成本進行合理決策，嚴禁機械式「一鏡一請求」或無條件「同場景必合併」。若拆分可顯著降低重試成本或避免狀態污染，應獨立發起請求；蒙太奇或強因果關聯鏡頭則可合併。
+3. **關鍵幀單鏡頭策略為工作流政策**：I2VA、FL2VA 與 L2VA 採用單一連續鏡頭策略（固定標記為 `[Shot 1]`），為內部確保生成穩定度與控制成本的工作流控管政策，非模型底層能力之上限宣稱。若需多視角切鏡，應拆分為單鏡頭請求後剪輯，或改採 T2VA / Ref2VA（Ref2VA 的身分與場景參考可支援多鏡頭連續敘事）。
+4. **請求自洽與起始狀態**：每個請求必須自洽。僅有實際提交的參考資產具備錨定效力；身分卡或道具卡無法提供前置時間狀態。除實際提交首幀或接續幀外，每個請求必須明確陳述起始狀態。外部全域設定不會自動繼承。
+5. **製作業務與路由規範**：提示詞撰寫與實質修改優先由 Antigravity 執行；Codex 僅在缺少 CLI 或確認配額耗盡時作為備援介入（認證、網路、頻率限制、逾時、權限或內容過濾器應直接阻擋，不得作為觸發備援之依據）。Codex 可負責編排、程式碼與審查。在原生 Antigravity 環境中無須遞迴路由。所有製作筆記、QA 記錄與提供商資訊嚴禁放入可複製之提示詞中；禁止偽造 PASS 記錄。指南內範例均為合成格式示意，非真實生成驗收。
 
-**T2VA** has no image-alignment instruction and begins directly with the three core fields.
+## 3. 提示詞結構與第一行對齊模板
 
-**I2VA** always uses:
+提示詞由兩部分構成：第一行為關鍵幀對齊指令（T2VA 無），空一行後緊接三大核心欄位。`S.SS` 代表目標影片之有效時長（嚴格精確至小數點後兩位，如 `8.00` 秒）。
 
+### 3.1 關鍵幀對齊指令模板
+- **I2VA**：
 ```text
 For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.
 ```
-
-**FL2VA** always uses:
-
+- **FL2VA**：
 ```text
 How the reference pictures align with the target video — Picture 1 (from Shot 1) aligns with the 0.00-second mark of the target video; Picture 2 (from Shot 1) aligns with the S.SS-second mark of the target video.
 ```
-
-**L2VA** always uses:
-
+- **L2VA**：
 ```text
 How the reference pictures align with the target video — <Picture 1> (from [Shot 1]) aligns with the S.SS-second mark of the target video.
 ```
 
-I2VA, FL2VA, and L2VA each describe exactly one continuous shot, so every keyframe alignment in those modes belongs to `[Shot 1]`. `S.SS` is the effective video duration formatted to exactly two decimal places. T2VA and full-reference Ref2VA may describe multiple shots when suitable. The instruction must be the first line of the final prompt, followed by one blank line before the core fields.
-
-### 2.2 Part Two Contains the Three Core Fields
+### 3.2 三大核心欄位
 
 ```text
 integrated_multimodal_description: [Shot 1] ...
@@ -45,183 +46,22 @@ overall_soundscape: ...
 non_diegetic_music: ...
 ```
 
-- **integrated_multimodal_description**: Describes visuals, actions, shots, speakers, dialogue, singing, and diegetic audio along the timeline.
-- **overall_soundscape**: Summarizes ambient sound, physical action sounds, and non-verbal human sounds across the entire video.
-- **non_diegetic_music**: Describes background music that the characters cannot hear and only the audience can hear.
-
-## 3. How to Incorporate Keyframes into the Multimodal Description
-
-### 3.1 I2VA: Begin from the Image and Develop Forward
-
-`<Picture 1>` is the actual first frame of the video at 0.00 seconds and belongs to `[Shot 1]`. I2VA describes one continuous shot; do not insert a semantic cut, reverse shot, or montage, even if it is hidden in prose or repeated labels. Continuous camera movement or focus changes within the same event remain allowed. The description should first establish the style, subjects, composition, and scene anchors in the image, then describe the next action. Character identity, clothing, colors, key objects, and spatial relationships should remain consistent. If multiple shots are needed, use T2VA or Ref2VA when appropriate, or generate each shot separately and edit them together.
-
-Recommended structure: **first-frame anchor → action onset → continuous development → result or reaction**.
-
-### 3.2 FL2VA: Describe the Path Between the First and Last Frames
-
-FL2VA is strictly one continuous shot. Picture 1 is the opening and Picture 2 is the ending; both align to `[Shot 1]`. The alignment instruction therefore names `Shot 1` for both pictures. Focus on how the subject moves, how poses change, how objects are manipulated, how the composition evolves, and how the scene or lighting changes within that continuous shot.
-
-Do not use FL2VA for a semantic cut, reverse shot, montage, or second shot hidden inside prose or repeated `[Shot 1]` labels. A continuous pan, tracking move, push/pull, arc, or focus shift within the same event is still one shot and is allowed. If the requested sequence needs multiple shots, use T2VA or full-reference Ref2VA when appropriate, or split it into per-shot generations and edit them together.
-
-Recommended structure: **first-frame state → observable intermediate changes → progressively narrowing differences → last-frame state**.
-
-### 3.3 L2VA: Infer the Opening and Land on the Image at the End
-
-`<Picture 1>` is the final frame of the video and belongs to `[Shot 1]`. L2VA describes one continuous shot; do not insert a semantic cut, reverse shot, or montage, even if it is hidden in prose or repeated labels. Continuous camera movement or focus changes within the same event remain allowed. Infer a plausible earlier state from the user's intent and the last frame, then describe how the characters, objects, camera, and scene gradually approach the reference image. If multiple shots are needed, use T2VA or Ref2VA when appropriate, or generate each shot separately and edit them together.
-
-Recommended structure: **plausible preceding state → explicit action and transition path → gradual convergence in the final shot → last-frame landing**.
-
-If the user requests both any keyframe mode (I2VA, FL2VA, or L2VA) and multiple shots, explain the mismatch and offer T2VA/Ref2VA or per-shot generations with editing; do not silently discard either part of the request.
-
-## 4. How to Write the Three Shared Core Sections
-
-### 4.1 Develop the Multimodal Description Along the Timeline
-
-`integrated_multimodal_description` is the main body of the rewritten prompt. Every detail should correspond to something visible or audible: visual style, initial composition, subject appearance and position, scene and key props, actions and reactions, shot changes, spoken language, and synchronized diegetic sound.
-
-At the beginning of `[Shot 1]`, state the overall style and initial composition. Common styles include `Cinematic`, `live-action`, `2D-animated`, `3D CG`, `claymation`, `watercolor`, and `vintage film`. For keyframe tasks, derive the style from the reference image; for T2VA, select it from the user's text.
-
-```text
-[Shot 1] Live-action, cinematic, a medium-wide shot frames...
-```
-
-### 4.2 Multiple Shots and Cuts (T2VA / Ref2VA)
-
-This cut syntax is for multi-shot T2VA or Ref2VA. I2VA, FL2VA, and L2VA stay within their single continuous shot and do not use cuts. In T2VA / Ref2VA, do not add a timestamp to the first shot. Use sequential shot numbers for later shots, and begin each one with a strictly increasing cut time that falls within the video duration:
-
-```text
-[Shot 2] At 00:03.500, the camera cuts to...
-```
-
-For ordinary cuts, use `the camera cuts to`, `the shot cuts to`, `the shot transitions to`, `the shot changes to`, or `the shot switches to`. When explicitly requested by the user, cross-dissolve, fade, or wipe may also be used. A cut should introduce new information about the subject, space, state, viewpoint, or time. If only the distance or a slight angle needs to change, prefer camera motion.
-
-### 4.3 Camera Motion: Motion Type + Amplitude + Speed
-
-A complete camera-motion expression has three dimensions: the **motion type** defines how the camera moves, **amplitude** defines the range of compositional change, and **speed** defines the pacing of that change. Add amplitude and speed only when they are meaningful; medium amplitude and normal speed are usually omitted.
-
-| Dimension | Available Expression | Description |
-|-|-|-|
-| Motion type | `Zoom In / Zoom Out` | The focal length changes while the camera body remains stationary |
-| Motion type | `Push In / Pull Out` | The camera moves forward / backward |
-| Motion type | `Pan Left / Pan Right` | The camera remains in place while the lens pivots horizontally |
-| Motion type | `Truck Left / Truck Right` | The camera translates horizontally |
-| Motion type | `Tilt Up / Tilt Down` | The camera remains in place while the lens pivots vertically |
-| Motion type | `Pedestal Up / Pedestal Down` | The entire camera moves upward / downward |
-| Motion type | `Arc Shot` | The camera moves in an arc around the subject |
-| Motion type | `Tracking Shot` | The camera follows a moving subject |
-| Motion type | `Static Shot` | The camera position and lens remain still |
-| Motion type | `Shake Slightly / Shake Strongly` | Slight / strong camera shake |
-| Motion type | `POV` | The subject's point of view |
-| Motion type | `Roll Clockwise / Roll Counterclockwise` | The camera rolls clockwise / counterclockwise around the lens axis |
-| Amplitude | `with small amplitude` | Small-range change |
-| Amplitude | `with large amplitude` | Large-range change |
-| Speed | `at slow speed` | Slow movement |
-| Speed | `at fast speed` | Fast movement |
-
-Camera motion should be written as a natural English action within the shot, rather than stacked as separate labels at the end of a sentence:
-
-```text
-The camera pushes in with small amplitude at slow speed toward the folded letter in her hands.
-The camera pans right with large amplitude at fast speed, revealing the open doorway.
-The camera holds a static shot as the runner exits the frame.
-```
-
-### 4.4 Speakers, Dialogue, and Singing
-
-Subjects who speak, sing, or produce an off-screen human voice use stable IDs such as `(S1)` and `(S2)`. When multiple already-numbered speakers speak or sing together, use a compound ID such as `(S1,S2)`. A speaker keeps the same ID across shots; characters who never vocalize receive no speaker ID.
-
-When a speaker first appears, provide enough information from the visual and audio context to establish a stable identity, such as character type, age, gender, whether the person is on-screen, pitch, timbre, speaking rate, or accent. Place the speaker's identifying phrase, ID, action, and delivery outside `<d>`. Inside `<d>`, include only the language tag and the actual user-provided spoken content. Preserve every original word and punctuation mark verbatim; do not translate or rewrite them.
-
-```text
-The young woman with a quiet, breathy voice (S1) says: <d>[English] I get off at the next station.</d>
-The two children (S1,S2) shout together, <d>[English] Wait for us!</d>
-```
-
-For voiceover, use the exact phrase `says in an off-screen voiceover`. Immediately after every voiceover `<d>` block, state that the corresponding on-screen character's lips remain closed:
-
-```text
-The man (S1) says in an off-screen voiceover: <d>[English] I still remember that road.</d> while his lips remain completely closed.
-```
-
-When the same line of dialogue or lyrics crosses a cut, use `<scenetrans>` at the connecting points in both parts and explicitly state that the audio continues across the cut. Use `<cutoff>` when speech is truncated by the end of the video. Continuity may be expressed with `continues seamlessly across the cut`, `continues uninterrupted into the next shot`, `carries over from the previous shot`, or `remains audible across the transition`.
-
-### 4.5 On-Screen Text
-
-Place any banner, sign, label, subtitle, or neon text that is actually visible on screen in English double quotation marks. Preserve the original text and punctuation verbatim, without translation.
-
-```text
-A red neon sign reading "營業中" glows above the doorway.
-```
-
-### 4.6 overall_soundscape
-
-Use 1–4 English sentences in one continuous paragraph to summarize the ambient sound, physical action sounds, and non-verbal human sounds across the full video, such as wind, rain, traffic, footsteps, fabric movement, impacts, breathing, laughter, or panting. Dialogue, singing, and diegetic music already belong in the multimodal description and should not be repeated here. Use `N/A` only when the user explicitly requests complete silence throughout the video.
-
-```text
-overall_soundscape: Steady rain taps against the café windows while low room ambience continues underneath. The entrance bell rings once, followed by wet footsteps and the soft scrape of a chair.
-```
-
-### 4.7 non_diegetic_music
-
-Use 1–3 English sentences to describe background music that the characters cannot hear and only the audience can hear. Focus on instrumentation, speed, rhythm, and dynamic changes; do not use abstract mood words or explain the emotional function of the score. Singing, instruments, radio, television, or phone music audible to the characters are diegetic events and should appear in the multimodal description. Use `N/A` when there is no non-diegetic music.
-
-```text
-non_diegetic_music: Sparse piano notes at a slow tempo, joined by sustained low strings that gradually increase in volume before fading out.
-```
-
-## 5. Cases
-
-### Case 1: T2VA
-
-With no reference image, construct the complete timeline directly from the text. You may add scene, character, action, and sound details that remain consistent with the user's intent.
-
-```text
-integrated_multimodal_description: [Shot 1] Live-action, cinematic, a medium-wide shot frames a baker opening the shutters of a small street bakery before sunrise. The camera pushes in with small amplitude at slow speed as the middle-aged baker with a calm, slightly raspy voice (S1) places a fresh loaf on the wooden counter and says: <d>[English] First batch of the morning.</d> [Shot 2] At 00:05.000, the camera cuts to a close-up of steam rising from the sliced bread while the baker's final words carry over from the previous shot.
-
-overall_soundscape: Wooden shutters scrape open over a quiet street as trays clink softly inside the bakery. The doorbell rings once, followed by light footsteps and the crisp sound of bread being sliced.
-
-non_diegetic_music: A soft acoustic-guitar pattern at a moderate tempo, joined by sparse upright-bass notes and a gentle fade at the end.
-```
-
-### Case 2: I2VA
-
-Write the first-frame instruction first, then use the subject, composition, and scene in Picture 1 as the starting point of Shot 1 before describing how the scene continues to develop.
-
-```text
-For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.
-
-integrated_multimodal_description: [Shot 1] Live-action, cinematic, the young woman shown in <Picture 1> remains beside the rain-covered train window, preserving her appearance, clothing, seat position, and the carriage layout. The camera trucks right with small amplitude at slow speed as she lifts her gaze from the folded letter toward the passing city lights. Her reflection moves across the glass while the quiet, breathy young woman (S1) says: <d>[English] I get off at the next station.</d> She folds the letter along its existing crease.
-
-overall_soundscape: The train wheels produce a steady metallic rhythm beneath a low ventilation hum. Rain ticks against the window while paper rustles softly in her hands.
-
-non_diegetic_music: Sustained cello notes at a slow tempo with widely spaced piano tones, gradually decreasing in volume.
-```
-
-### Case 3: FL2VA
-
-The two images anchor the opening and ending respectively. The body should not repeat two static image descriptions; instead, it should supply the motion path that connects them. The following example is an eight-second single shot.
-
-```text
-How the reference pictures align with the target video — Picture 1 (from Shot 1) aligns with the 0.00-second mark of the target video; Picture 2 (from Shot 1) aligns with the 8.00-second mark of the target video.
-
-integrated_multimodal_description: [Shot 1] Live-action, cinematic, a rain-soaked cyclist begins in the position and framing established by Picture 1, holding a closed black umbrella beside a silver bicycle. The camera pulls out with small amplitude at slow speed as she releases the bicycle handle, raises the umbrella above her shoulder, and presses the runner upward until the canopy opens. Water rolls from the expanding fabric while she steps beneath it, rotates the handle into the final angle, and settles into the pose, spacing, and composition established by Picture 2 at the end of the shot.
-
-overall_soundscape: Rain falls steadily on the pavement, followed by the metallic click of the umbrella runner and the soft snap of the canopy opening. Water drips from the bicycle frame as distant traffic passes.
-
-non_diegetic_music: N/A
-```
-
-### Case 4: L2VA
-
-The image anchors only the final moment. First establish a compatible earlier state, then let the actions, object states, and composition gradually land on Picture 1 in the final shot. The following example is a six-second single shot.
-
-```text
-How the reference pictures align with the target video — <Picture 1> (from [Shot 1]) aligns with the 6.00-second mark of the target video.
-
-integrated_multimodal_description: [Shot 1] Live-action, cinematic, a close shot begins with an intact drinking glass near the edge of a dark wooden table, while the same hand and sleeve visible in <Picture 1> approach from the right. The camera pushes in with small amplitude at slow speed as the fingertips strike the rim. The glass tips, falls, and hits the floor with a sharp impact; cracks spread through it as fragments slide outward. Toward the end, the moving pieces lose momentum and settle into the exact broken arrangement, hand position, camera angle, lighting, and final composition established by <Picture 1>.
-
-overall_soundscape: Fingertips tap the glass before it scrapes across the tabletop, falls, and breaks with a sharp crash. Small fragments scatter and gradually stop sliding across the floor.
-
-non_diegetic_music: A low electronic pulse at a slow tempo, ending immediately after the glass breaks.
-```
-
+- **integrated_multimodal_description**：描述畫面構圖、主體外觀、動作鏈、運鏡、發聲主體與原樣對白。
+- **overall_soundscape**：總結背景環境聲、物理動作音效與非語言人聲（如喘息、腳步聲）。若全片靜音填 `N/A`。
+- **non_diegetic_music**：描述僅觀眾可聞的畫外配樂（樂器、節奏與動態）。無配樂填 `N/A`。
+
+## 4. 鏡頭語言與語法規則
+
+1. **語言與用詞規範**：正文描述、動作鏈與音訊描述使用繁體中文（或使用者指定語言）；欄位鍵名、控制語法、鏡頭標籤與指定固定片語維持精確英文。
+2. **切鏡與時間標記**：
+   - 首個鏡頭 `[Shot 1]` 不帶時間戳。
+   - 多鏡頭模式（T2VA / Ref2VA）後續切鏡採用遞增時間戳，格式如 `[Shot 2] At 00:03.500, 鏡頭切至...`（時間標記可按 0.5 秒倍數規劃，普通切鏡使用「鏡頭切至」等繁體中文描述）。
+   - I2VA、FL2VA、L2VA 嚴禁語意切鏡、反打或蒙太奇，不可於正文中偽裝多鏡頭。
+3. **運鏡表達**：運鏡融入自然敘事中（運動類型 + 幅度 + 速度，如「攝影機以慢速小幅度推進」），避免堆砌術語或強加毫米焦段（如 35mm），去除可選的英文運鏡括號。
+4. **說話者與對白規範**：
+   - 說話者標記使用穩定編號 `(S1)`、`(S2)`，依實際發聲順序編號；多人合唱或同時發聲使用複合編號 `(S1,S2)`。禁止設立獨立的 `MUSIC` 說話者。未發聲角色不給予說話者編號。
+   - 對白使用 `<d>[語言標籤] 原文對白</d>`，鎖定原始對白內容與標點，禁止意譯或擅改。
+   - **旁白與嘴部閉合（Voiceover）**：旁白必須使用固定片語 `says in an off-screen voiceover:`，且在每個旁白 `<d>` 區塊之後，必須緊接陳述畫面中對應角色雙唇保持緊閉（例如：`while his lips remain completely closed.`）。
+   - **跨鏡頭與截斷對白**：對白跨越切鏡時，兩端銜接點均須標註 `<scenetrans>` 並敘述音訊無縫延續（如 `continues seamlessly across the cut`）；影片結束截斷之語音使用 `<cutoff>`。
+   - **畫面可見文字**：招牌、標籤、螢幕文字以英文雙引號 `"..."` 精確標示原文。
+5. **精簡原則**：去除強加的微動作填料（microbeats filler），不設機械式字數門檻，聚焦推動情節的主動作鏈。

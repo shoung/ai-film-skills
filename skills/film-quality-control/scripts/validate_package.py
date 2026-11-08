@@ -14,6 +14,7 @@ import re
 import sys
 from pathlib import Path
 from typing import Any
+from prompt_checks import outside_dialogue, shot_headers, validate_prompt
 
 ASSET_ROLES = {"character_card", "scene_card", "prop_card", "frame"}
 GENERATION_MODES = {"T2VA", "I2VA", "FL2VA", "L2VA", "Ref2VA"}
@@ -61,10 +62,12 @@ def _resolve_package_path(base_dir: Path, value: Any) -> Path | None:
 
 def _has_affirmative_cut(prompt: str) -> bool:
     # H3 dialogue blocks contain literal spoken words, not camera directives.
-    text = re.sub(r"<d\b[^>]*>.*?</d\s*>", " ", prompt, flags=re.IGNORECASE | re.DOTALL).casefold()
+    text = outside_dialogue(prompt).casefold()
     # A second explicitly numbered Shot is strong evidence of a concealed cut.
     shot_numbers = set(re.findall(r"\bshot\s*#?\s*(\d+)\b", text, flags=re.IGNORECASE))
     if len(shot_numbers) > 1:
+        return True
+    if len({number for _, number in shot_headers(text)}) > 1:
         return True
     patterns = (
         r"切鏡|切到|切至|切換到|切換至|插鏡|反打|蒙太奇|跳切|轉場|轉至|再切回",
@@ -278,6 +281,7 @@ def validate_package(data: dict, base_dir: Path, delivery: bool = False) -> list
             issues.append(_issue("error", "INVALID_TYPE", f"{target}.prompt", "prompt 必須是字串。"))
         elif isinstance(mode, str) and mode in {"I2VA", "FL2VA", "L2VA"} and _has_affirmative_cut(prompt):
             issues.append(_issue("error", "PROMPT_CONTAINS_CUT", f"{target}.prompt", "提示詞疑似要求同一生成任務中切鏡；請人工閱讀完整提示詞確認。"))
+        issues.extend(validate_prompt(item, assets, root, delivery=delivery, target=target))
         timing = item.get("timing_review")
         timing_severity = "error" if delivery else "warning"
         if not isinstance(timing, dict):

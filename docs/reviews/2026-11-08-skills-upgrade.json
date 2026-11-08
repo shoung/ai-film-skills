@@ -1,0 +1,282 @@
+{
+  "record_type": "skills_upgrade_verification",
+  "created_at_utc": "2026-11-08T14:57:10.596280+00:00",
+  "baseline_commit": "63e0dc7ec7e6f5940ae4e296b3a9f45b54445ac8",
+  "documentation_author": "antigravity",
+  "implementation_and_qa": "codex",
+  "cli_version": "1.5.3",
+  "authoring_receipts": [
+    {
+      "batch": "provider",
+      "provider": "antigravity",
+      "status": "SUCCESS",
+      "conversation_id": "12701ade-1484-487f-9b4b-7845a71416fc",
+      "response_sha256": "8d9c41c3703975e141cf840f2df3b74e299891eb5951d6e3fc75b5948284830b"
+    },
+    {
+      "batch": "entry-fix",
+      "provider": "antigravity",
+      "status": "SUCCESS",
+      "conversation_id": "16fc6ec1-f0c1-4bcc-8538-d4089bbdf14b",
+      "response_sha256": "2147e153080f99f872e1c02514bb68257ad110a134ad3d0bdbe672c5971ba7bf"
+    },
+    {
+      "batch": "overview-fix",
+      "provider": "antigravity",
+      "status": "SUCCESS",
+      "conversation_id": "3adf6fa1-786f-4aa9-b4bd-77d405e6dc55",
+      "response_sha256": "e8f02e38e022be04c6c7f90dc22fe321b988d87a84d9f81d1f892b47baa3f7fe"
+    },
+    {
+      "batch": "seedance-final-short",
+      "provider": "antigravity",
+      "status": "SUCCESS",
+      "conversation_id": "cd7a69c9-3125-4512-8055-2939d81c7e51",
+      "response_sha256": "549d2cd9837358821c39f0ad4d5a831caaab904f9f7422364dd347e1d01f30f6"
+    },
+    {
+      "batch": "examples-final-short",
+      "provider": "antigravity",
+      "status": "SUCCESS",
+      "conversation_id": "632e3f0b-1337-42d5-bf93-ece6bc873ea3",
+      "response_sha256": "063e68f06e2250cd6138a82c4dde017422f2139c3ed3666493587b35e4c17c95"
+    },
+    {
+      "batch": "format-fix",
+      "provider": "antigravity",
+      "status": "SUCCESS",
+      "conversation_id": "2e02102a-7933-4724-a81d-cfee324eb10d",
+      "response_sha256": "801978084c3782e380608882d3dd2026a785dafa1ebf5ff859b79045f758a260"
+    },
+    {
+      "batch": "core-qc",
+      "provider": "antigravity",
+      "status": "SUCCESS",
+      "conversation_id": "ab1bb7e2-aad7-4247-a528-14ee0da9aa7e",
+      "response_sha256": "d93dd1e548662380725655fa74bc54415597a894952736a1b8373eb4ccadd721"
+    },
+    {
+      "batch": "contracts-fix",
+      "provider": "antigravity",
+      "status": "SUCCESS",
+      "conversation_id": "45721261-e062-418d-8eaa-6f7df2920369",
+      "response_sha256": "b26cd9d663ad5e3c37f394f601cf8faa0930c4d7d289011ab42635cbc07fe1c0"
+    },
+    {
+      "batch": "contracts-final",
+      "provider": "antigravity",
+      "status": "SUCCESS",
+      "conversation_id": "db5f0604-4b04-4574-97f8-bd005729fba6",
+      "response_sha256": "8c16fcde897cf38888674a565785b81e9f7be27c097d6e3a988696508e723faf"
+    },
+    {
+      "batch": "last-corrections",
+      "provider": "antigravity",
+      "status": "SUCCESS",
+      "conversation_id": "bbd37cc2-cf93-4ce8-bad3-92988275365f",
+      "response_sha256": "07415669aeeee40dcef40b890cc83465e657ec3a558986e499eb78dc6cd34b96"
+    },
+    {
+      "batch": "writer-final-safe",
+      "provider": "antigravity",
+      "status": "SUCCESS",
+      "conversation_id": "5418f0f8-25d1-4a04-9bc1-09b1e84fb21d",
+      "response_sha256": "e986d762a9c91e8a36f49660cae2c9e08064d1b3c310f20fa35048e2560a82ca"
+    }
+  ],
+  "file_sha256": {
+    "README.md": "053801c3f069d4794b1a1589f33da772b55bc5a026e72a9ad25f116a3e405a62",
+    "docs/superpowers/plans/2026-11-08-film-skills-upgrade.md": "80617e08a80bb2ef147f1828ee492edc12917eaa5597282202fef7db23d5a4f2",
+    "skills/antigravity-writer/SKILL.md": "8b7e76e7ef1990e842d03bda9771f2f6b693d7680b8ef3890aa5fa0913f73463",
+    "skills/antigravity-writer/references/provider-workflow.md": "5f8f8a64ce599f13102afadd2948b68a5fd754c9fb91ffb01a1c2db71e03e263",
+    "skills/antigravity-writer/scripts/route_writer.py": "15be4ebe92917f0bbae53a8269a1f637bbf606087fef69934a320305563916dc",
+    "skills/antigravity-writer/tests/test_route_writer.py": "5b5c6a15169639264e090ecf9ff039786a8861e6e2fe2393bf9312486b226fc5",
+    "skills/dialogue-expert/SKILL.md": "aa553a4791714d98bbeb0547c71f66ae89752a752da4ec388c647d5f97142aeb",
+    "skills/film-quality-control/SKILL.md": "ecd087f3d9519f04fbb536d92ec23b0fae5e3e048a761e8cf687d234db9c5e37",
+    "skills/film-quality-control/assets/prompt-review-template.json": "044e306cc56c46bc5b4f073459667cc65b07087560ddc1740056598a1c65eec7",
+    "skills/film-quality-control/references/mode-and-shot-rules.md": "6c3bc638ea2f71455a785c73b40b7276a2884ebd51403d6ae389783a2c0a5512",
+    "skills/film-quality-control/references/package-schema.md": "b1f4fb470d92ae14d6cff85f42ef758d4e74a2c5337b82540d537160750cbf4b",
+    "skills/film-quality-control/references/prompt-review.md": "1afdbcacf82fb93d7cfcd76aed16aae7b8ee773c972094718cc709fa41d129da",
+    "skills/film-quality-control/references/timing-and-dialogue.md": "cf88178d546a0908fdf19694878709c725d593836949ad5dbc449e75128db935",
+    "skills/film-quality-control/scripts/prompt_checks.py": "977b71b9c096e3d2261ace254b2fb5fbf608ab40c1f81191ce78ac2840d21a27",
+    "skills/film-quality-control/scripts/validate_package.py": "c5480c8a6e5f9e5f772b84d858f3727bb5a5b40092ccef7c3ac53318ef79132a",
+    "skills/film-quality-control/tests/test_prompt_checks.py": "fb31189da6ac6865113ab7e478873c72fd81d0b1de6fc20285f677b36715ff61",
+    "skills/film-quality-control/tests/test_validate_package.py": "313f5fd316bb765d8dc7d6fcef106ed85ea06aff3a0f831e95c22713db80255c",
+    "skills/h3-prompt-writing/SKILL.md": "13767fa18cc5305a147c1d4a0a9191a54cd566e79e767dc4b37b7435349fcdac",
+    "skills/h3-prompt-writing/references/base-en.txt": "f8e208d32c75cfeb53664dea1ad4bfe512022551402f318ab9dd88f57939acdb",
+    "skills/h3-prompt-writing/references/concise-format.md": "53b220f94edd885cb397117c4123f861fdc57b543347919d5341f5ce749dad55",
+    "skills/h3-prompt-writing/references/format-example.md": "2f1bf613014c0c5b6a65f95dd3c89458631619412163f654c3cf003f8eae224c",
+    "skills/h3-prompt-writing/references/performance-control.md": "c394e8ada3c39676c13948bf0afce8cd8aa279c7bceb2eb7d3fb265bd9f002e5",
+    "skills/h3-prompt-writing/references/ref-en.txt": "587f7cfadb3482daebfaad26b607a8a8d1fc8533a135b57c69b34431dc1b7591",
+    "skills/screenplay-director/SKILL.md": "e34c98ca25df17991aa5bc5ab580b2747a9d97eb7516adab61f0adb0bf63775a",
+    "skills/screenplay-doctor/SKILL.md": "fec7711b4ce6846ac0a2d90068b14afb05b0c3ea4263755d9f81156241a1ff34",
+    "skills/screenplay-framework/SKILL.md": "5b43af0bbe22034b4985ee32aab86ecffd0c863cbc85ba19aa053a40ea9cd254",
+    "skills/screenplay-writing/SKILL.md": "f5f1504a1befbbfb6e8e009cdedbf9420a4e3ba3c4f63c7531d74b67f73bfb2d",
+    "skills/video-prompts/SKILL.md": "810c89e9aebdab270866e94642a2ac98ebe018b597deb9b3bd8535051bd77026",
+    "skills/video-prompts/references/01_視頻提示詞生成SKILL_V2.0_執行主文件.md": "4459220f7314068fbd2dfb2d41978c0197ccb3e417fa1ace4bc7117c4871f943",
+    "skills/video-prompts/references/02_視頻提示詞生成SKILL_V2.0_示例庫.md": "7f265aea76a1348b8a8cf4d7dc97c3550640dfd5be45ce79e6b2b40c446a9f94",
+    "skills/video-prompts/references/03_Seedance 提示詞指南.md": "c29d3488f8d09118a4ce81a81dded37f412906253cdbcb48ba97705ce4b654f7",
+    "skills/video-prompts/references/concise-format.md": "53b220f94edd885cb397117c4123f861fdc57b543347919d5341f5ce749dad55",
+    "skills/video-prompts/references/format-example.md": "633e99b8ccc4670f073f1d7b8c20524ca6932f80650fa3b54e50110cd60cc602",
+    "skills/video-prompts/references/performance-control.md": "c394e8ada3c39676c13948bf0afce8cd8aa279c7bceb2eb7d3fb265bd9f002e5",
+    "skills/visual-asset-prompts/SKILL.md": "ed0e0e823592ec9260d1725100d7285dc7cc55786af54816f6a076f23e8886ff"
+  },
+  "tests": {
+    "film_quality_control": {
+      "passed": 66
+    },
+    "antigravity_writer": {
+      "passed": 14
+    },
+    "total_passed": 80,
+    "raw_results": [
+      {
+        "status": "fulfilled",
+        "value": {
+          "chunk_id": "f247a7",
+          "wall_time_seconds": 0.269355833,
+          "exit_code": 0,
+          "original_token_count": 42,
+          "output": "..................................................................\n----------------------------------------------------------------------\nRan 66 tests in 0.296s\n\nOK\n"
+        }
+      },
+      {
+        "status": "fulfilled",
+        "value": {
+          "chunk_id": "0143f1",
+          "wall_time_seconds": 3.099867375,
+          "exit_code": 0,
+          "original_token_count": 29,
+          "output": "..............\n----------------------------------------------------------------------\nRan 14 tests in 3.128s\n\nOK\n"
+        }
+      },
+      {
+        "status": "fulfilled",
+        "value": {
+          "chunk_id": "09b961",
+          "wall_time_seconds": 6.4e-05,
+          "exit_code": 0,
+          "original_token_count": 0,
+          "output": ""
+        }
+      }
+    ]
+  },
+  "static_validation": {
+    "skill_entries_valid": 10,
+    "local_links_checked": 140,
+    "broken_links": 0,
+    "shared_reference_copies_match": true,
+    "git_diff_check_exit_code": 0
+  },
+  "independent_code_and_doc_review": {
+    "reviewer_id": "/root/review_code",
+    "read_only": true,
+    "findings_fixed": [
+      "success_with_error_or_partial_output",
+      "spoken_references_false_positive",
+      "chinese_alias_boundary",
+      "inline_shot_headers",
+      "transient_or_negated_quota_exhaustion",
+      "native_cli_example_tool_permissions"
+    ],
+    "reviewer_checked_example_blocks": 8,
+    "reviewer_example_lint_errors": 0
+  },
+  "live_router": {
+    "initial": {
+      "provider": "antigravity",
+      "status": "written",
+      "reason": "antigravity_available",
+      "cli_version": "1.5.3",
+      "conversation_id": "5d835bb9-4317-40ab-8ac2-3a0fba316af4"
+    },
+    "revision_timeout": {
+      "provider": null,
+      "status": "blocked",
+      "reason": "timeout",
+      "text": "",
+      "cli_version": "1.5.3",
+      "conversation_id": null
+    },
+    "revision_retry_blocked": {
+      "provider": "antigravity",
+      "status": "ERROR",
+      "error": "Your previous response was blocked by content safety filters: The model output could not be generated. This output contains sensitive words that violate Google's [Generative AI Prohibited Use policy](https://policies.google.com/terms/generative-ai/use-policy). If you think this was an error, [send feedback](https://aistudio.google.com/docs/troubleshooting).\nPlease provide a response that complies with content policies, or briefly explain to the user why you cannot help with this request\nRetries remaining: 3",
+      "conversation_id": "38f0ac65-2800-4def-8e85-acc33db07a03"
+    },
+    "focused_revision_retry": {
+      "provider": "antigravity",
+      "status": "SUCCESS",
+      "conversation_id": "d38decda-3de5-443d-943b-03ba620b830b",
+      "artifact": "2026-11-08-prompt-smoke.json",
+      "text_scope": "C only; A/B retained from initial successful call",
+      "metadata_normalized_by_codex": [
+        "mode=T2VA",
+        "model separate from mode"
+      ]
+    }
+  },
+  "limits": {
+    "media_generated": false,
+    "model_api_capabilities_live_verified": false,
+    "duration_support_in_smoke_test": "synthetic_assumption",
+    "timing_evidence": "text_estimate_only",
+    "lint_is_semantic_review": false,
+    "policy_scope": "this_skills_suite",
+    "baseline_full_generation_succeeded": false
+  },
+  "mechanical_edits": [
+    "restore_original_director_timing_review_paragraph",
+    "resolve_plan_relative_links",
+    "synchronize_shared_references",
+    "normalize_H3_cut_timestamp_comma"
+  ],
+  "smoke_structural_validation": {
+    "cases": 3,
+    "requests": 4,
+    "errors": 0,
+    "requires_independent_semantic_review": true
+  },
+  "independent_prompt_reviews": [
+    {
+      "reviewer_id": "/root/isolated_a",
+      "scope": "A_G01",
+      "phase": "isolated",
+      "status": "reviewed_with_nonblocking_note",
+      "observation": "端杯時未指定手別，結尾才提到收回右手；其餘未見明確問題。6 秒估算可容納一次短暫飲水。",
+      "disposition": "not_changed; same-hand action is readable from the continuous action chain"
+    },
+    {
+      "reviewer_id": "/root/isolated_b",
+      "scope": "B_G01",
+      "phase": "isolated",
+      "status": "no_issues_found",
+      "observation": "無明顯文字問題。前四秒開櫃並露出空層架、後四秒說「沒有了？」再凝視，按一般動作及語速估算可行。"
+    },
+    {
+      "reviewer_id": "/root/isolated_c1",
+      "scope": "C_G01",
+      "phase": "isolated_revision",
+      "status": "no_issues_found",
+      "observation": "原先歧義已解決：「女子站在淺木色工作桌前」明確交代起始為站姿，無須額外起身。未見其他實際問題。以自然簡潔的動作節奏估算，4 秒可行；無缺失引用或資產依賴。"
+    },
+    {
+      "reviewer_id": "/root/isolated_c2",
+      "scope": "C_G02",
+      "phase": "isolated_revision",
+      "status": "no_issues_found",
+      "observation": "無明顯問題。場景、人物、抽屜與木盒的起始狀態完整，不依賴其他鏡頭或素材；放盒、收手、站定的動作連續可讀，4 秒時長合理。"
+    },
+    {
+      "reviewer_id": "/root/isolated_b",
+      "scope": "A,B,C",
+      "phase": "production_after_isolation",
+      "status": "reviewed_with_nonblocking_notes",
+      "observation": "製作複核未見明確的阻擋問題；分組符合來源要求。A 全段無台詞未明文指定。C 第一請求未交代抽屜是否已拉開，第二請求以已拉開狀態開始，尚未完整建立這一項跨請求狀態連續性，但沒有明示相反狀態。按一般動作速度估算，A 六秒、B 四加四秒、C 各四秒均可行。",
+      "disposition": "retained_as_nonblocking_observations_in_synthetic_test; not a production delivery approval"
+    }
+  ],
+  "verification_finished_at_utc": "2026-11-08T14:58:33.524331+00:00",
+  "smoke_artifact_sha256": "3239330875afe76f3954f57a6236c36db2d446fdba5e9c967b066c017e797e85"
+}

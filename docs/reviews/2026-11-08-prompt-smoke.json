@@ -1,0 +1,67 @@
+{
+  "cases": [
+    {
+      "id": "A",
+      "grouping_reason": "單一連續動作，適合單鏡頭生成。",
+      "groups": [
+        {
+          "id": "A_G01",
+          "mode": "T2VA",
+          "duration_seconds": 6,
+          "shot_ids": [
+            "S001"
+          ],
+          "image_inputs": [],
+          "prompt": "晨光照耀的木質餐桌前，灰襯衫女子安靜坐著。她伸手端起桌上的白色陶瓷水杯喝水，隨後平穩放回桌面並收回右手。平視中近景，固定機位。",
+          "model": "Seedance"
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "grouping_reason": "開櫃與困惑發話為連續因果事件，合併為單一請求以維持連貫。",
+      "groups": [
+        {
+          "id": "B_G01",
+          "mode": "T2VA",
+          "duration_seconds": 8,
+          "shot_ids": [
+            "S001",
+            "S002"
+          ],
+          "image_inputs": [],
+          "prompt": "integrated_multimodal_description: [Shot 1] 平視中景。廚房內，一名灰襯衫女子站在木質櫥櫃前，伸手拉開櫃門，展現空無一物的內部層架。固定機位。[Shot 2] At 00:04.000, 切至女子正面近景，鏡頭緩慢微推。女子注視空置層架，帶著困惑語氣 (S1) 說道：<d>[Chinese] 沒有了？</d> 說完後維持凝視。\n\noverall_soundscape: 木櫃門開啟的摩擦聲與環境底噪。\n\nnon_diegetic_music: N/A",
+          "model": "MiniMax H3"
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "grouping_reason": "客戶要求獨立重抽，為確保每一鏡頭的最終動勢控制，將兩個分鏡拆分為獨立的請求。",
+      "groups": [
+        {
+          "id": "C_G01",
+          "model": "Seedance",
+          "mode": "T2VA",
+          "duration_seconds": 4,
+          "shot_ids": [
+            "S001"
+          ],
+          "image_inputs": [],
+          "prompt": "平視中景，固定鏡頭。日光照亮整潔的工作室，身穿灰襯衫的女子站在淺木色工作桌前，桌上放著一只闔上的小木盒。女子起始雙手自然垂放尚未接觸木盒，隨後雙手拿起木盒並抱至胸前站定。"
+        },
+        {
+          "id": "C_G02",
+          "model": "Seedance",
+          "mode": "T2VA",
+          "duration_seconds": 4,
+          "shot_ids": [
+            "S002"
+          ],
+          "image_inputs": [],
+          "prompt": "平視中景，固定鏡頭。日光照亮整潔的工作室，身穿灰襯衫的女子站在淺木色工作桌已拉開的抽屜前。女子起始雙手抱著闔上的小木盒，隨後將木盒放進抽屜，再收回雙手站定。"
+        }
+      ]
+    }
+  ]
+}

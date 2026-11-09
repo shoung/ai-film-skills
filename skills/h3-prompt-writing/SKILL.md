@@ -11,7 +11,7 @@ description: "Write MiniMax H3 video generation prompts for T2VA, I2VA, FL2VA, L
 
 所有提示詞創作、劇本改編及實質文字修訂，優先路由至 Google Antigravity CLI (`agy`) 撰寫，詳見 [Antigravity 撰寫工作流](../antigravity-writer/SKILL.md)。
 
-Codex 負責編排、格式檢驗與結構驗證，不得改寫正文。僅在未安裝 CLI 或確認配額耗盡（具體 quota 訊號，非一般 429、網路、認證、超時、權限或內容過濾）時方可降級 Codex。已在 Antigravity 執行環境下的工作直接完成，絕不遞迴自我調用。創作回執（`provider`、`reason`、`cli_version`、`conversation_id`）置於提示詞外部。
+Codex 負責編排、格式檢驗與結構驗證，不得改寫正文。僅在未安裝 CLI 或確認配額耗盡（具體 quota 訊號，非一般 429、網路、認證、超時或權限錯誤）時降級 Codex，或因內容過濾明確拒絕時降級至當前預設 LLM。已在 Antigravity 執行環境下的工作直接完成，絕不遞迴自我調用。創作回執（`provider`、`reason`、`cli_version`、`conversation_id`）置於提示詞外部。
 
 ## 生成請求為獨立單元與分組準則
 

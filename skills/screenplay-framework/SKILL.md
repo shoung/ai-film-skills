@@ -8,7 +8,7 @@ description: "將故事靈感轉成方向卡、專案檔案、人物設定與大
 ## 文本創作分流（Writing Provider Routing）
 
 本技能涉及之方向卡、專案檔案、人物設定、故事大綱及對標 DNA 分析等實質文案創作，優先路由至 Google Antigravity CLI（`agy`），由 Codex 負責任務編排與架構檢核，不逕自代筆原創內容。詳見 [antigravity-writer](../antigravity-writer/SKILL.md)。
-- **降級與防遞迴**：若已在 Antigravity 內部執行，直接產出設定與大綱，嚴禁遞迴調用；若未安裝 writer 輔助腳本但存在 `agy` 命令，直接執行無頭調用；僅在 CLI 未安裝或確認配額耗盡時降級至 Codex。遇驗證、權限或網路錯誤應阻擋回報，不隱蔽替換。
+- **降級與防遞迴**：若已在 Antigravity 內部執行，直接產出設定與大綱，嚴禁遞迴調用；若未安裝 writer 輔助腳本但存在 `agy` 命令，直接執行無頭調用；僅在 CLI 未安裝或確認配額耗盡時降級至 Codex，或因內容過濾明確拒絕時降級至當前預設 LLM。遇驗證、權限或網路錯誤應阻擋回報，不隱蔽替換。
 
 ## 執行方式
 

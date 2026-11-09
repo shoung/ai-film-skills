@@ -126,6 +126,40 @@ class WriterRoutingTests(unittest.TestCase):
         receipt = json.loads(output.read_text())
         self.assertEqual((receipt['provider'], receipt['text']), ('codex', ''))
 
+    def test_content_filter_refusal_routes_to_host_default_and_discards_partial(self):
+        message = 'Your previous response was blocked by content safety filters: The model output could not be generated.'
+        for envelope, code, stderr in (
+            ({'status': 'ERROR', 'error': message, 'response': 'partial'}, 0, ''),
+            ({'status': 'SUCCESS', 'error': message, 'response': 'partial'}, 0, ''),
+            (None, 1, message),
+            ({'status': 'ERROR', 'error': 'CONTENT_FILTERED'}, 1, ''),
+        ):
+            with self.subTest(envelope=envelope):
+                result = self.run_writer(self.executable(envelope, code, error=stderr))
+                self.assertEqual((result['status'], result['provider'], result['reason'], result['text']),
+                                 ('fallback', 'default_llm', 'content_filtered', ''))
+
+    def test_filter_mentions_and_unconfirmed_diagnostics_do_not_trigger_fallback(self):
+        for message in ('Content filter check failed: network timeout.',
+                        'Not blocked by content safety filters.',
+                        'CONTENT_FILTERED: false; authentication required',
+                        'Cannot determine whether output was blocked by content safety filters.',
+                        'Permission denied', 'Content filter unavailable'):
+            with self.subTest(message=message):
+                result = self.run_writer(self.executable({'status': 'ERROR', 'error': message}, 1))
+                self.assertEqual(result['status'], 'blocked')
+        result = self.run_writer(self.executable({'status': 'SUCCESS', 'response': 'The story mentions CONTENT_FILTERED.'}))
+        self.assertEqual(result['status'], 'written')
+
+    def test_content_filter_cli_exit_and_receipt(self):
+        self.executable({'status': 'ERROR', 'error': 'Output was blocked by content safety filters.'}, 0)
+        brief, output = self.root / 'brief.txt', self.root / 'receipt.json'
+        brief.write_text('Synthetic writing brief')
+        completed = subprocess.run([sys.executable, '-B', str(SCRIPT), '--brief', str(brief), '--output', str(output)],
+                                   capture_output=True, text=True, env=dict(os.environ, PATH=str(self.root)))
+        self.assertEqual(completed.returncode, 10)
+        self.assertEqual(json.loads(output.read_text())['provider'], 'default_llm')
+
     def test_cli_success_and_auth_failure_exit_codes(self):
         brief, output = self.root / 'brief.txt', self.root / 'receipt.json'
         brief.write_text('測試文字')

@@ -8,7 +8,7 @@ description: "依專案檔案及已確認大綱擴寫劇本、續寫場次、依
 ## 文本創作分流（Writing Provider Routing）
 
 本技能涉及之劇本正文擴寫、分場劇本撰寫、場次續寫及依據診斷報告的實質修訂，一律優先路由至 Google Antigravity CLI（`agy`），由 Codex 負責任務編排、章節對照與版本比對，不逕自代筆撰寫劇本文本。詳見 [antigravity-writer](../antigravity-writer/SKILL.md)。
-- **降級與防遞迴**：若已在 Antigravity 內部執行，直接產出劇本文案，嚴禁遞迴調用；若未安裝 writer 輔助腳本但存在 `agy` 命令，直接執行無頭調用；僅在 CLI 未安裝或確認配額耗盡時降級至 Codex。遇驗證、權限或網路錯誤應阻擋回報，不隱蔽替換。
+- **降級與防遞迴**：若已在 Antigravity 內部執行，直接產出劇本文案，嚴禁遞迴調用；若未安裝 writer 輔助腳本但存在 `agy` 命令，直接執行無頭調用；僅在 CLI 未安裝或確認配額耗盡時降級至 Codex，或因內容過濾明確拒絕時降級至當前預設 LLM。遇驗證、權限或網路錯誤應阻擋回報，不隱蔽替換。
 
 ## 執行方式
 

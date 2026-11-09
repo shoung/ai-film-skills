@@ -36,8 +36,26 @@ def _quota_exhausted(diagnostic):
     return bool(QUOTA.search(diagnostic) and not QUOTA_UNCONFIRMED.search(diagnostic))
 
 
+CONTENT_FILTER = re.compile(
+    r'\bCONTENT_FILTERED\b|\b(?:blocked|rejected)\s+by\s+(?:Google\s+)?content\s+(?:safety\s+)?filters?\b|'
+    r'(?:內容|内容)(?:安全)?(?:過濾|过滤)(?:器|機制|机制)?(?:拒絕|拒绝|攔截|拦截)', re.I)
+FILTER_UNCONFIRMED = re.compile(
+    r'\bnot\s+(?:blocked|rejected|filtered|CONTENT_FILTERED)\b|'
+    r'\b(?:cannot|could\s+not|unable\s+to)\s+determine\b|'
+    r'\bCONTENT_FILTERED[\s\x27\x22:=]{0,8}(?:false|no|0)\b', re.I)
+
+
+def _content_filtered(diagnostic):
+    # Inspect CLI diagnostics, never the generated creative response. The host
+    # still evaluates the request under its own rules before authoring it.
+    return bool(CONTENT_FILTER.search(diagnostic)
+                and not FILTER_UNCONFIRMED.search(diagnostic)
+                and not QUOTA_UNCONFIRMED.search(diagnostic))
+
+
 def _result(status, reason, *, text='', version=None, conversation_id=None, error=None):
-    result = {'provider': 'antigravity' if status == 'written' else 'codex' if status == 'fallback' else None,
+    fallback_provider = 'default_llm' if reason == 'content_filtered' else 'codex'
+    result = {'provider': 'antigravity' if status == 'written' else fallback_provider if status == 'fallback' else None,
               'status': status, 'reason': reason, 'text': text,
               'cli_version': version, 'conversation_id': conversation_id}
     if error:
@@ -101,12 +119,16 @@ def route(brief: str, *, executable: str | None = None, timeout: float = 180, mo
     if not isinstance(envelope, dict):
         # Only actual failing diagnostics can establish quota exhaustion;
         # successful generated prose containing those words is not evidence.
+        if completed.returncode and _content_filtered(completed.stderr):
+            return _result('fallback', 'content_filtered', version=version, error=completed.stderr)
         if completed.returncode and _quota_exhausted(completed.stderr):
             return _result('fallback', 'quota_exhausted', version=version, error=completed.stderr)
         return _result('blocked', 'invalid_response', version=version, error=completed.stderr)
     conversation = envelope.get('conversation_id')
     diagnostic = str(envelope.get('error') or '') + '\n' + completed.stderr
     response = envelope.get('response')
+    if _content_filtered(diagnostic):
+        return _result('fallback', 'content_filtered', version=version, conversation_id=conversation, error=diagnostic)
     if completed.returncode == 0 and envelope.get('status') == 'SUCCESS':
         if envelope.get('error') or re.search(r'\berror\s*:|\bpartial\s+(?:output|response)|turn still in progress', completed.stderr, re.I):
             return _result('blocked', 'incomplete_response', version=version, conversation_id=conversation, error=diagnostic)

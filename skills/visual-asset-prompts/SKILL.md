@@ -8,7 +8,7 @@ description: "從劇本提取角色、場景、道具及多狀態視覺資產，
 ## 文本創作分流（Writing Provider Routing）
 
 本技能涉及之文生圖提示詞（角色、場景、道具、狀態）與 `@資產名` 視覺特徵描述正文，優先路由至 Google Antigravity CLI（`agy`），由 Codex 負責資產 ID 清單核對、登錄檔維護與格式驗證，不逕自代寫視覺描述。詳見 [antigravity-writer](../antigravity-writer/SKILL.md)。
-- **降級與防遞迴**：若已在 Antigravity 內部執行，直接產出提示詞，嚴禁遞迴調用；若未安裝 writer 輔助腳本但存在 `agy` 命令，直接執行無頭調用；僅在 CLI 未安裝或確認配額耗盡時降級至 Codex。遇驗證、權限或網路錯誤應阻擋回報，不隱蔽替換。
+- **降級與防遞迴**：若已在 Antigravity 內部執行，直接產出提示詞，嚴禁遞迴調用；若未安裝 writer 輔助腳本但存在 `agy` 命令，直接執行無頭調用；僅在 CLI 未安裝或確認配額耗盡時降級至 Codex，或因內容過濾明確拒絕時降級至當前預設 LLM。遇驗證、權限或網路錯誤應阻擋回報，不隱蔽替換。
 
 ## 執行方式
 

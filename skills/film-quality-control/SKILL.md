@@ -11,7 +11,7 @@ description: "核對 AI 影片的分鏡、靜幀、生成模式、提示詞獨�
 
 所有文字修復、提示詞改寫及劇本實質調整，優先路由至 Google Antigravity CLI (`agy`) 撰寫，詳見 [Antigravity 撰寫工作流](../antigravity-writer/SKILL.md)。
 
-Codex 負責品管排程、機讀格式檢驗、雜湊簽章與腳本執行；審片員與審核員（`reviewer_role = "independent_qa"`）採唯讀模式回報問題與修復建議，不自行篡改創作文本。所有實質修訂由 Antigravity 撰寫完成後重審。僅在未安裝 CLI 或確認配額耗盡（具體 quota 訊號，非一般 429、網路、認證、超時、權限或內容過濾）時方可降級 Codex。已在 Antigravity 執行環境下的工作直接處理，不遞迴調用。審核紀錄與回執嚴格置於提示詞外部。
+Codex 負責品管排程、機讀格式檢驗、雜湊簽章與腳本執行；審片員與審核員（`reviewer_role = "independent_qa"`）採唯讀模式回報問題與修復建議，不自行篡改創作文本。所有實質修訂由 Antigravity 撰寫完成後重審。僅在未安裝 CLI 或確認配額耗盡（具體 quota 訊號，非一般 429、網路、認證、超時或權限錯誤）時降級 Codex，或因內容過濾明確拒絕時降級至當前預設 LLM。已在 Antigravity 執行環境下的工作直接處理，不遞迴調用。審核紀錄與回執嚴格置於提示詞外部。
 
 ## 生成請求為獨立單元與分組準則
 

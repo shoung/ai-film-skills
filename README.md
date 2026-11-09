@@ -41,7 +41,7 @@
 
 - 本套件所有文字創作與實質內容修訂（劇本、大綱、人物設定、台詞、分鏡提示詞及視覺資產描述）一律優先路由至 Google Antigravity CLI（`agy`）。此為本套件產出優先級，非全域系統策略。
 - Codex 專職流程總控、組裝 Brief、代碼維護、結構檢驗及格式處理，嚴禁悄悄代筆改寫創意內容。
-- 僅在未安裝 CLI 或明確配額耗盡（具體 quota 訊號，非一般 429 速率限制、網路逾時、驗證或權限錯誤）時，方可合規降級由 Codex 補位。
+- 僅在未安裝 CLI 或明確配額耗盡（具體 quota 訊號，非一般 429 速率限制、網路逾時、驗證或權限錯誤）時合規降級由 Codex 補位，或因內容過濾明確拒絕時降級至當前預設 LLM。
 - 遇網路、逾時、驗證或權限等阻擋性錯誤，必須診斷回報並停止，嚴禁擅自切換代筆；寫作憑據（`provider`, `status`, `reason`, `cli_version`, `conversation_id`）一律記錄於模型提示詞外部。
 - 若任務已處於 Antigravity 執行環境中，就地直接執行創作，嚴禁遞迴調用分流腳本。
 - 詳細寫作路由與工作流程請參閱 [`skills/antigravity-writer/SKILL.md`](skills/antigravity-writer/SKILL.md) 與 [`skills/antigravity-writer/references/provider-workflow.md`](skills/antigravity-writer/references/provider-workflow.md)。

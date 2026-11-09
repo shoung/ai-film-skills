@@ -8,7 +8,7 @@ description: "對劇本、大綱、單集、單場或單點問題進行多視角
 ## 文本創作分流（Writing Provider Routing）
 
 本技能涉及之多視角圓桌會診分析、診斷報告撰寫與實質修改任務清單產出，優先路由至 Google Antigravity CLI（`agy`），由 Codex 負責任務編排與報告格式檢驗，不逕自代筆撰寫診斷結論與創意修改方案。詳見 [antigravity-writer](../antigravity-writer/SKILL.md)。
-- **降級與防遞迴**：若已在 Antigravity 內部執行，直接產出會診報告，嚴禁遞迴調用；若未安裝 writer 輔助腳本但存在 `agy` 命令，直接執行無頭調用；僅在 CLI 未安裝或確認配額耗盡時降級至 Codex。遇驗證、權限或網路錯誤應阻擋回報，不隱蔽替換。
+- **降級與防遞迴**：若已在 Antigravity 內部執行，直接產出會診報告，嚴禁遞迴調用；若未安裝 writer 輔助腳本但存在 `agy` 命令，直接執行無頭調用；僅在 CLI 未安裝或確認配額耗盡時降級至 Codex，或因內容過濾明確拒絕時降級至當前預設 LLM。遇驗證、權限或網路錯誤應阻擋回報，不隱蔽替換。
 
 ## 執行方式
 

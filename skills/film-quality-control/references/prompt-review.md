@@ -23,7 +23,7 @@
 
 ## 2. 審核角色與責任隔離
 - 審核員身分標記為 `reviewer_role = "independent_qa"`，採**唯讀模式**：僅出具審核結論、問題清單與修復建議，`reviewer_id` 不得與 `producer_id` 相同，**嚴禁自行修改提示詞正文、分鏡或劇本**。
-- 提示詞修訂必須透過寫作提供者路由（參閱 [antigravity-writer](../../antigravity-writer/SKILL.md)）執行；修訂優先由 Google Antigravity CLI（`agy`）處理，僅在二進位檔缺失（`not_installed`）或確認配額耗盡（`quota_exhausted`）時方具備降級由 Codex 接替之資格，而非一律假定由 `agy` 執行。修訂完成後送交審核員重新比對。
+- 提示詞修訂必須透過寫作提供者路由（參閱 [antigravity-writer](../../antigravity-writer/SKILL.md)）執行；修訂優先由 Google Antigravity CLI（`agy`）處理，僅在二進位檔缺失（`not_installed`）或確認配額耗盡（`quota_exhausted`）時降級 Codex，或因內容過濾明確拒絕（`content_filtered`）時降級當前預設 LLM，方具備降級接替之資格，而非一律假定由 `agy` 執行。修訂完成後送交審核員重新比對。
 - 審核紀錄、品管憑據與製作備忘保存在獨立 QA 報告中，嚴格置於模型提示詞正文之外。
 
 ## 3. 結構檢查 vs 語意檢查

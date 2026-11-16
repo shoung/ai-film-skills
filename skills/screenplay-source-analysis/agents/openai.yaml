@@ -1,0 +1,4 @@
+interface:
+  display_name: "原著分析"
+  short_description: "依來源行號拆解原著並追蹤章級覆蓋"
+  default_prompt: "使用 $screenplay-source-analysis 分析這份原著，保留可回查的來源證據與章級進度，並交接候選與未決事項。"

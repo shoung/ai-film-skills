@@ -1,0 +1,1 @@
+Design tokens adapted from ZenStory dashboards in drama-skills, MIT License, Copyright (c) 2026 drama-skills contributors. Upstream: commit 37232f6d22e174c36e321d2e3a1a3ae871e7d602.

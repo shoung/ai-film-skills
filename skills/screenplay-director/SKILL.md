@@ -12,6 +12,8 @@ description: "從靈感到可執行劇本的流程總控；用於階段判斷、
 
 ## 新創作啟動
 
+收到小說、連載或原著檔案而尚未完成來源分析時，先交 [screenplay-source-analysis](../screenplay-source-analysis/SKILL.md) 建立有原文位置可回查的分析與分集候選，再交 framework 定改編方案；抽樣、候選與已確認決策分開。已有核准改編 brief 時直接接續，不強迫重做來源分析。
+
 開始全新創作時讀取 [啟動 intake](references/startup-intake.md)，並將 [SHOUNG 標記檔](assets/shoung-logo.txt) 的完整內容原樣獨立顯示一次；它只屬於對話中的創作識別，不得放進劇本、提示詞、圖片或影片。若任務是續作、已有劇本或局部修訂，先沿用既定決策與素材，只問會影響本次工作的關鍵缺項。每輪最多問 2–3 題，分輪補問；不要要求重做開場自檢，也不要在下游交接時重複標記或重問已回答事項。維護、列清單、安裝或解說技能時不顯示標記。
 
 ## 靜幀品管
@@ -36,6 +38,8 @@ description: "從靈感到可執行劇本的流程總控；用於階段判斷、
 
 ## 專案內技能銜接
 
+- 原著分析：[screenplay-source-analysis](../screenplay-source-analysis/SKILL.md)
+- 本地創作台：[film-workbench](../film-workbench/SKILL.md)；查閱八欄分鏡、素材、草圖與 QA 登錄，原文保存不等於生成或審核通過。
 - 分鏡草圖：[storyboard-grid](../storyboard-grid/SKILL.md)；需要理解既有分鏡表時，使用正式資產卡與資產圖片生成同畫幅的 25 宮格總覽，缺件先警示並停止生成。
 - 劇本總控：[screenplay-director](../screenplay-director/SKILL.md)
 - 劇本框架：[screenplay-framework](../screenplay-framework/SKILL.md)

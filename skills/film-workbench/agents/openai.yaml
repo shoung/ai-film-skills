@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI 影視本地創作台"
+  short_description: "檢視分集、八欄分鏡、素材與 QA 登錄，預覽草圖並安全編輯原文"
+  default_prompt: "請使用 $film-workbench 開啟目前專案的本地創作台，維持八欄分鏡格式與既有 QA 登錄。"

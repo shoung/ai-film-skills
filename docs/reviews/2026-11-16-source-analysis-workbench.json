@@ -1,0 +1,113 @@
+{
+  "date": "2026-11-16",
+  "base_commit": "efac5ffe11565b487969e5c5d29eb8e70fe49ddf",
+  "upstream_commit": "37232f6d22e174c36e321d2e3a1a3ae871e7d602",
+  "scope": [
+    "原著分析 skill 與可驗證來源索引",
+    "八欄分鏡方法及表外參考圖控制",
+    "本機創作台與原文編輯"
+  ],
+  "preserved": [
+    "八欄主表及原鏡序",
+    "每列一個連續鏡頭",
+    "一個 generation 可對應多列",
+    "獨立盲審與全劇審查",
+    "實際資產、簽章及 QA 證據",
+    "planned 圖不能冒充 actual"
+  ],
+  "reviewers": [
+    {
+      "id": "qa_skills",
+      "model": "gpt-6-luna",
+      "scope": "技能規格、相對連結、前向情境與定點複驗",
+      "status": "pass"
+    },
+    {
+      "id": "qa_tests",
+      "model": "gpt-6-luna",
+      "scope": "正式單元與獨立 CLI/HTTP 反例",
+      "status": "pass_with_environment_limit"
+    },
+    {
+      "id": "qa_browser",
+      "model": "gpt-6-luna",
+      "scope": "真 Chromium 桌面及窄版 E2E",
+      "status": "pass"
+    }
+  ],
+  "unit_suites": [
+    {
+      "directory": "skills/screenplay-source-analysis/tests",
+      "passed": 57
+    },
+    {
+      "directory": "skills/film-workbench/tests",
+      "passed": 17
+    },
+    {
+      "directory": "skills/film-quality-control/tests",
+      "passed": 66
+    },
+    {
+      "directory": "skills/antigravity-writer/tests",
+      "passed": 17
+    }
+  ],
+  "unit_command": "python -X utf8 -m unittest discover -s <directory> -v",
+  "unit_total_passed": 157,
+  "independent_extra_checks": {
+    "source_cli": 9,
+    "workbench_adversarial": 33,
+    "shared_cookie_jar": 3
+  },
+  "browser": {
+    "engine": "Chromium (Playwright)",
+    "passed": 24,
+    "failed": 0,
+    "viewports": [
+      "1440x1000",
+      "390x844"
+    ],
+    "coverage": [
+      "八欄與原鏡序",
+      "分集及工具列來源",
+      "表格與卡片",
+      "安全 br 換行",
+      "素材與生成群組/QA登錄",
+      "圖片與無鏡頭格圖",
+      "原文保存及刷新",
+      "409保留草稿",
+      "未保存提示",
+      "QC唯讀",
+      "惡意文字不執行",
+      "空專案",
+      "窄版真實儲存/關閉",
+      "跨port媒體cookie隔離",
+      "新URL及hash-only token恢復"
+    ],
+    "local_artifacts": "workspace/_work/film-upgrade/qa-browser/",
+    "report_sha256": "3ecc52549b28d6c2e16a16bbad3582d572e2b6cf615e344f9641e0375b213e7e",
+    "test_services_stopped": true
+  },
+  "limitations": [
+    "Windows 權限不允許建立 symlink 或 NTFS junction，該類越界拒絕未完成實測。",
+    "未呼叫圖片、影片或配音生成服務；未以正式原著評估創作內容品質。"
+  ],
+  "writing_provenance": {
+    "integration_references": {
+      "provider": "antigravity",
+      "status": "written",
+      "cli_version": "1.5.9",
+      "conversation_id": "d9b5e79f-1cc3-4090-be76-74f4717fc0e5"
+    },
+    "source_skill_receipt": "skills/screenplay-source-analysis/WRITING-RECEIPT.md",
+    "brief_scope": "功能規格與公開上游資料，未提供私人專案內容"
+  },
+  "code_sha256": {
+    "skills/screenplay-source-analysis/scripts/novel_index.py": "b68d3a974be9eb15690fbbc5b5dc824db86d9caf9b97cdb277612ed00d5fefc2",
+    "skills/film-workbench/scripts/project_reader.py": "be4d003ff99aa1e66f9479bed0fb418f53f196c7f7fe59ad77371208eacb7a1d",
+    "skills/film-workbench/scripts/dashboard_server.py": "591822f24b0227bd0d8fccc73b6a12d099a7e8545fd139768b516a4d7c9714f0",
+    "skills/film-workbench/assets/dashboard/app.js": "0fc349540a8a1e253bdde5d4b101772e8d2699f85c4de46d6195f9eee75f34c5",
+    "skills/film-workbench/assets/dashboard/styles.css": "a6d4fed574513a08dfa15876652957bdd107e500dd9be7f52b469e7adcdd34a8"
+  }
+}

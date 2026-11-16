@@ -21,6 +21,8 @@ description: 根據既有分鏡表、正式資產卡與資產圖片，實際生�
 
 ## 2. 硬性前置檢查（Hard Prerequisites Check）
 
+參考圖用途可對照 [參考圖控制規範](../film-quality-control/references/reference-control.md)；其中 planned 掛圖計畫不滿足本技能的實圖前置條件，仍須完成本節整批缺件檢查。草圖完成後可由 [film-workbench](../film-workbench/SKILL.md) 瀏覽，不代表自動通過視覺 QA。
+
 在發起任何圖像生成或編輯調用前，必須循序執行前置驗證。**任一必要條件未達成，必須立即中斷整批任務，於對話中明確列出缺漏項目與路徑，嚴格禁止呼叫生圖工具、禁止偷補資產、禁止降級為無參考圖生圖、禁止先行施作半套。**
 
 ### 2.1 檢查清單

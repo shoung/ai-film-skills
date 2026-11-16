@@ -17,7 +17,7 @@ class WriterRoutingTests(unittest.TestCase):
         spec.loader.exec_module(self.router)
         self.tmp = tempfile.TemporaryDirectory()
         self.root = Path(self.tmp.name)
-        self.fake = self.root / 'agy'
+        self.fake = self.root / ('agy.cmd' if os.name == 'nt' else 'agy')
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -31,7 +31,17 @@ class WriterRoutingTests(unittest.TestCase):
                 f'print({json.dumps(json.dumps(envelope) if envelope is not None else "")})\n'
                 f'print({error!r}, file=sys.stderr)\n'
                 f'sys.exit({exit_code})\n')
-        self.fake.write_text(body)
+        if os.name == 'nt':
+            # Windows does not execute shebang scripts. A real local cmd
+            # launcher keeps the subprocess/CLI boundary under test, including
+            # PATH discovery, while running the same synthetic Python worker.
+            worker = self.root / 'agy_worker.py'
+            worker.write_text(body, encoding='utf-8')
+            self.fake.write_text(
+                '@echo off\nset PYTHONIOENCODING=utf-8\n'
+                f'"{sys.executable}" "{worker}" %*\n', encoding='utf-8')
+        else:
+            self.fake.write_text(body, encoding='utf-8')
         self.fake.chmod(0o755)
         return str(self.fake)
 
@@ -118,12 +128,12 @@ class WriterRoutingTests(unittest.TestCase):
 
     def test_cli_records_fallback_without_writing_as_codex(self):
         brief, output = self.root / 'brief.txt', self.root / 'receipt.json'
-        brief.write_text('測試文字')
+        brief.write_text('測試文字', encoding='utf-8')
         env = dict(os.environ, PATH=str(self.root))
         completed = subprocess.run([sys.executable, '-B', str(SCRIPT), '--brief', str(brief), '--output', str(output)],
                                    capture_output=True, text=True, env=env)
         self.assertEqual(completed.returncode, 10, completed.stderr)
-        receipt = json.loads(output.read_text())
+        receipt = json.loads(output.read_text(encoding='utf-8'))
         self.assertEqual((receipt['provider'], receipt['text']), ('codex', ''))
 
     def test_content_filter_refusal_routes_to_host_default_and_discards_partial(self):
@@ -154,15 +164,15 @@ class WriterRoutingTests(unittest.TestCase):
     def test_content_filter_cli_exit_and_receipt(self):
         self.executable({'status': 'ERROR', 'error': 'Output was blocked by content safety filters.'}, 0)
         brief, output = self.root / 'brief.txt', self.root / 'receipt.json'
-        brief.write_text('Synthetic writing brief')
+        brief.write_text('Synthetic writing brief', encoding='utf-8')
         completed = subprocess.run([sys.executable, '-B', str(SCRIPT), '--brief', str(brief), '--output', str(output)],
                                    capture_output=True, text=True, env=dict(os.environ, PATH=str(self.root)))
         self.assertEqual(completed.returncode, 10)
-        self.assertEqual(json.loads(output.read_text())['provider'], 'default_llm')
+        self.assertEqual(json.loads(output.read_text(encoding='utf-8'))['provider'], 'default_llm')
 
     def test_cli_success_and_auth_failure_exit_codes(self):
         brief, output = self.root / 'brief.txt', self.root / 'receipt.json'
-        brief.write_text('測試文字')
+        brief.write_text('測試文字', encoding='utf-8')
         env = dict(os.environ, PATH=str(self.root))
         for envelope, cli_exit, expected in (({'status': 'SUCCESS', 'response': '稿件'}, 0, 0),
                                              ({'status': 'ERROR', 'error': 'authentication required'}, 1, 20)):

@@ -43,6 +43,8 @@ I2VA/FL2VA/L2VA 限單連續鏡頭為本工作流程的穩定性政策，非模�
 
 使用者要求建立、改寫或轉換「分鏡表」時，讀取 [八欄分鏡表格式](references/storyboard-table-format.md) 與 [分鏡表模板](references/storyboard-table-template.md)，固定八欄與欄序，每列一個連續鏡頭；生成群組可在旁表中對應多列。此分支只處理純表格，不啟動模型提示詞改寫或生成需求；純提示詞任務不自動附加分鏡表。
 
+處理群戲、動作場面、首尾幀或修鏡時，按需讀取 [分鏡方法庫](references/storyboard-methods.md)。參考素材規劃與掛圖依 [參考圖控制規範](../film-quality-control/references/reference-control.md)；計畫圖與真實提交素材分開，控制範圍、生成群組與 QA 仍放表外，不新增主表欄位。
+
 ## 執行方式
 
 1. **判斷交付類型並確認模型**：純分鏡表依八欄規範處理；撰寫模型專用 prompt 時，沿用既有指定模型，未指定則先詢問確認（Seedance 或 MiniMax H3）。

@@ -7,6 +7,7 @@
 | Skill | 用途 |
 |---|---|
 | `screenplay-director` | 從靈感到可執行劇本的流程總控、階段判斷與專家銜接 |
+| `screenplay-source-analysis` | 原著章節索引、抽樣快評、逐章證據、人物設定演進與改編分集候選 |
 | `screenplay-framework` | 建立方向卡、人物設定、專案檔案與故事大綱 |
 | `screenplay-writing` | 依專案檔案與大綱擴寫、續寫及修訂劇本 |
 | `screenplay-doctor` | 從結構、人物、節奏等角度診斷劇本並提出修改任務 |
@@ -14,6 +15,7 @@
 | `visual-asset-prompts` | 從劇本產生角色、場景、道具與狀態的視覺資產提示詞 |
 | `video-prompts` | 產生影片分鏡、時間碼、角色音色與影片生成提示詞 |
 | `storyboard-grid` | 依既有分鏡表、資產卡與資產圖生成同畫幅的 5×5 分鏡草圖，超過 25 鏡自動分頁 |
+| `film-workbench` | 本地創作台：八欄分鏡、分集文件、素材／生成群組／QA 對照、草圖預覽與原文編輯 |
 | `h3-prompt-writing` | 為 MiniMax H3 的 T2VA、I2VA、FL2VA、Ref2VA 等模式撰寫提示詞 |
 | `film-quality-control` | 核對分鏡／生成模式、資產版本、生成請求獨立性與雙軌品管證據 |
 | `antigravity-writer` | 全套件文字創作與實質修訂的第一分流提供者（Google Antigravity CLI），由 Codex 協同編排與品管 |
@@ -39,6 +41,26 @@
    已備妥分鏡表、正式資產卡及參考圖片後，可使用 `$storyboard-grid` 生成便於理解分鏡的草圖總覽。每張固定 25 宮格、無格間留白，僅以格線分隔，每格左上角只標原鏡號；整張及各格沿用影片寬高比，超過 25 鏡續頁，末頁空格留白。缺少分鏡表或必要資產卡／圖片時，先警示並停止生成。詳見 [25 宮格分鏡草圖](skills/storyboard-grid/SKILL.md)。
 
 5. 影像製作建議一併安裝 `screenplay-director`、`visual-asset-prompts`、`video-prompts`、`h3-prompt-writing`、`film-quality-control` 與 `antigravity-writer`，保留其相對目錄。共享啟動提問／SHOUNG 文字 LOGO 由導演提供，品管詳細規則、模板及檢查器由 `film-quality-control` 提供，文字創作路由由 `antigravity-writer` 規範。單獨安裝可做其原有純文字工作；缺少共享依賴時，依入口的替代規則標記限制，不能宣稱完成未執行的視覺 QA。
+
+## 原著改編與本地創作台
+
+已有小說或連載原文時，先以 `$screenplay-source-analysis` 分析指定範圍，再由 `screenplay-framework` 接續定改編方案；抽樣結論與分集候選不能當成正式定稿。索引工具只處理章界、來源變更與覆蓋檢查，原文事實及改編取捨仍需依來源與獨立審核判定。
+
+分鏡規劃可參考 [分鏡方法庫](skills/video-prompts/references/storyboard-methods.md) 與 [參考圖控制規範](skills/film-quality-control/references/reference-control.md)。新增資訊放表外，主表保持八欄；planned 掛圖計畫與 actual 實圖分開，實際生成與 25 宮格草圖的缺圖門檻不變。
+
+以 Python 3.9 以上從本倉庫啟動創作台（不需額外套件）：
+
+```text
+python skills/film-workbench/scripts/dashboard_server.py /absolute/path/to/project --port 0 --detach
+python skills/film-workbench/scripts/dashboard_server.py /absolute/path/to/project --status
+python skills/film-workbench/scripts/dashboard_server.py /absolute/path/to/project --stop
+```
+
+在本機瀏覽器開啟指令印出的登入網址。創作台直接讀取專案內 Markdown／CSV 八欄表及 QC 登錄，可瀏覽鏡頭、素材、生成群組、QA 紀錄與 25 宮格 PNG，並以原文編輯 Markdown／CSV／TXT。QC JSON 保持唯讀；儲存時如偵測到其他工具已修改檔案，會提示衝突而不覆蓋。
+
+同一專案重複啟動會沿用既有服務；更新程式後，先對該專案執行 `--stop` 再啟動，才能載入新版本。不要將本機登入網址的權杖公開。
+
+創作台不呼叫生成模型，不將保存視為 QA 通過；顯示的審核值是原檔登錄紀錄，仍須依 [film-quality-control](skills/film-quality-control/SKILL.md) 驗證當前素材、簽章與獨立證據。安裝時請保留各技能內的 `scripts/`、`assets/` 與授權檔。詳細入口見 [film-workbench](skills/film-workbench/SKILL.md)。
 
 ## 本套件文字創作分流機制
 
@@ -73,7 +95,9 @@ python skills/film-quality-control/scripts/validate_package.py /absolute/path/pa
 
 ## 來源與署名
 
-本倉庫所收錄 skills 的共同來源與署名為：**Elio_AIGC（抖音／B站）**。
+既有劇本開發與提示詞工作流程的原始來源與署名為：**Elio_AIGC（抖音／B站）**。
+
+新增原著分析、本地創作台及本次分鏡／參考控制擴充另參考 **ZenStory AI / drama-skills**，依 MIT 授權借用與改編；固定上游版本及授權全文見 [第三方來源與授權](THIRD_PARTY_NOTICES.md)，新技能內亦保留可獨立分發的授權檔。
 
 本次補充的缺漏提問、獨立品管、少量試作及局部修復流程，參考 [FEICAI CLUB 的 ad-storyboarder](https://github.com/feicaiclub/ad-storyboarder)（MIT）後依本倉庫工作流程重新設計。SHOUNG 為本專案的啟動文字識別，不取代原作者署名。沒有引入該倉庫的外部生成服務或執行環境依賴。
 

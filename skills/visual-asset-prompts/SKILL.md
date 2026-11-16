@@ -22,6 +22,7 @@ description: "從劇本提取角色、場景、道具及多狀態視覺資產，
 
 ## 專案內技能銜接
 
+- 對接鏡頭前依 [參考圖控制規範](../film-quality-control/references/reference-control.md) 在表外記錄素材用途、控制與不得控制範圍；不改本技能既有資產提示詞輸出格式，不將鏡頭姿態混入純美術卡。只有文字資產提示詞時，仍是計畫素材。
 - 分鏡草圖：[storyboard-grid](../storyboard-grid/SKILL.md)；分鏡表、正式資產卡及資產圖片齊備後，可交接生成 25 宮格總覽，文字資產提示詞不能替代參考圖片。
 - 劇本總控：[screenplay-director](../screenplay-director/SKILL.md)
 - 劇本框架：[screenplay-framework](../screenplay-framework/SKILL.md)

@@ -5,6 +5,7 @@ import http.cookies
 import http.client
 import json
 import os
+import re
 import secrets
 import subprocess
 import sys
@@ -18,8 +19,10 @@ from pathlib import Path
 
 try:
     from . import project_reader
+    from . import creator_views
 except ImportError:
     import project_reader
+    import creator_views
 
 RUNTIME = Path(os.environ.get('LOCALAPPDATA') or tempfile.gettempdir()) / 'film-workbench'
 STATIC_ROOT = Path(__file__).resolve().parents[1] / 'assets' / 'dashboard'
@@ -33,7 +36,33 @@ class Server(ThreadingHTTPServer):
     def __init__(self, addr, root, token):
         self.root = Path(root).resolve()
         self.token = token
+        self.projects = self._discover_projects()
         super().__init__(addr, Handler)
+
+    def _discover_projects(self):
+        def metadata(path):
+            for name in ('short-drama.json','project.json'):
+                try:
+                    value=json.loads((path/name).read_text(encoding='utf-8-sig'))
+                    if isinstance(value,dict): return value
+                except (OSError,ValueError,UnicodeError): pass
+            return None
+        own=metadata(self.root)
+        found={}
+        def ident(path, _data):
+            # Filesystem identity keeps copied projects with duplicated metadata IDs distinct.
+            return hashlib.sha256(str(path).encode('utf-8')).hexdigest()[:20]
+        if own is not None:
+            found[ident(self.root,own)]=self.root
+            return found
+        try: children=list(self.root.iterdir())
+        except OSError: children=[]
+        for child in children:
+            if child.is_symlink() or not child.is_dir() or metadata(child) is None: continue
+            found[ident(child.resolve(),metadata(child))]=child.resolve()
+        if not found:
+            found[ident(self.root,{})]=self.root
+        return found
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -60,10 +89,12 @@ class Handler(BaseHTTPRequestHandler):
 
     def _safe_host(self):
         try:
-            host = urllib.parse.urlsplit('//' + self.headers.get('Host', '')).hostname
+            parts = urllib.parse.urlsplit('//' + self.headers.get('Host', ''))
+            host = parts.hostname
+            port = parts.port
         except ValueError:
             return False
-        return host in ('127.0.0.1', 'localhost', '::1')
+        return host in ('127.0.0.1', 'localhost', '::1') and port == self.server.server_port
 
     def _origin_ok(self):
         origin = self.headers.get('Origin')
@@ -75,16 +106,235 @@ class Handler(BaseHTTPRequestHandler):
     def _authorized(self, cookie=False):
         if not self._safe_host() or not self._origin_ok():
             return False
-        if secrets.compare_digest(self.headers.get('X-Film-Token', ''), self.server.token):
-            return True
+        try:
+            if secrets.compare_digest(self.headers.get('X-Film-Token', ''), self.server.token):
+                return True
+        except TypeError:
+            return False
         if cookie:
-            jar = http.cookies.SimpleCookie(self.headers.get('Cookie', ''))
-            morsel = jar.get(self._cookie_name())
-            return bool(morsel and secrets.compare_digest(morsel.value, self.server.token))
+            try:
+                jar = http.cookies.SimpleCookie(self.headers.get('Cookie', ''))
+                morsel = jar.get(self._cookie_name())
+                return bool(morsel and secrets.compare_digest(morsel.value, self.server.token))
+            except (http.cookies.CookieError, TypeError):
+                return False
         return False
 
     def _cookie_name(self):
         return 'film_session_' + str(self.server.server_port)
+
+    def _project_id(self, root=None):
+        root=Path(root or self.server.root).resolve()
+        return next((ident for ident,path in self.server.projects.items() if path==root),hashlib.sha256(str(root).encode('utf-8')).hexdigest()[:20])
+
+    def _project_root(self, project_id=None):
+        if not project_id:
+            if len(self.server.projects)>1: raise ValueError('多專案工作區請指定 project')
+            return next(iter(self.server.projects.values()),self.server.root)
+        root=self.server.projects.get(str(project_id))
+        if root is None: raise ValueError('找不到專案')
+        return root
+
+    def _project_title(self, root=None):
+        root=Path(root or self.server.root)
+        for candidate in ('short-drama.json','project.json','專案設定.json','项目设定.json'):
+            try:
+                data=json.loads((root/candidate).read_text(encoding='utf-8-sig'))
+                if isinstance(data,dict) and isinstance(data.get('title'),str): return data['title']
+            except (OSError,ValueError,UnicodeError): pass
+        return root.name
+
+    def _metadata(self, root=None):
+        root=Path(root or self.server.root)
+        for candidate in ('short-drama.json','project.json','專案設定.json','项目设定.json'):
+            try:
+                data=json.loads((root/candidate).read_text(encoding='utf-8-sig'))
+                if isinstance(data,dict): return data
+            except (OSError,ValueError,UnicodeError): pass
+        return {}
+
+    def _snapshot(self, root=None):
+        return project_reader.project_snapshot(root or self.server.root)
+
+    def _episode_ids(self, root=None):
+        episodes=self._snapshot(root).get('episodes',[])
+        return [str(ep['id']) for ep in episodes if str(ep['id'])!='project' or bool(ep.get('shots'))]
+
+    def _episode(self, episode_id, root=None):
+        root=Path(root or self.server.root)
+        snap=self._snapshot(root)
+        episode=next((ep for ep in snap.get('episodes',[]) if str(ep['id'])==episode_id),None)
+        if episode is None: raise ValueError('找不到分集')
+        docs={}
+        aliases={'剧本.md':('劇本.md','剧本.md','screenplay.md'),'视觉设定.md':('視覺設定.md','视觉设定.md','設定.md','设定.md'),
+                 '分镜.md':('分鏡.md','分镜.md','storyboard.md','board.md'),'图片提示词.md':('圖片提示詞.md','图片提示词.md','圖片提示詞.txt'),
+                 '视频提示词.md':('視頻提示詞.md','影片提示詞.md','视频提示词.md','視頻提示詞.txt'),'剪辑单.md':('剪輯單.md','剪辑单.md')}
+        hints={'剧本.md':('剧本','劇本','screenplay'),'视觉设定.md':('视觉设定','視覺設定','设定集','视觉资产','視覺資產'),'分镜.md':('分镜','分鏡','storyboard'),'图片提示词.md':('图片提示词','圖片提示詞','image prompt'),'视频提示词.md':('视频提示词','視頻提示詞','影片提示词','video prompt','h3'),'剪辑单.md':('剪辑单','剪輯單','cut list')}
+        def find_doc(entries, canonical):
+            exact=next((f for f in entries if Path(f['path']).name.casefold() in {n.casefold() for n in aliases[canonical]}),None)
+            if exact: return exact
+            if canonical=='分镜.md' and episode.get('shots'):
+                source=episode['shots'][0].get('source')
+                source_entry=next((f for f in entries if f.get('path')==source),None)
+                if source_entry: return source_entry
+            for entry in entries:
+                file_path=Path(entry['path']); name=file_path.name.casefold(); parent=file_path.parent.name.casefold()
+                is_guide=any(word in name for word in ('说明','說明','readme','guide','使用方法'))
+                if canonical=='剧本.md' and any(word in name for word in ('台词','台詞','dialogue')): continue
+                if not is_guide and any(h.casefold() in name or (canonical in ('剧本.md','视觉设定.md') and h.casefold() in parent) for h in hints[canonical]): return entry
+            return None
+        for canonical,candidates in aliases.items():
+            entry=find_doc(episode.get('files',[]),canonical)
+            if entry:
+                docs[canonical]=project_reader.read_document(root,entry['path'])['content']
+        review_text=None
+        review_entry=next((f for f in snap.get('files',[]) if
+            (f.get('episode')==episode_id or re.search(r'(?<![A-Za-z0-9])'+re.escape(episode_id)+r'(?=[-_ .])',Path(f['path']).stem,re.I))
+            and ('審查' in f['name'] or '审查' in f['name'] or f['name'].lower().endswith('review.md'))),None)
+        if review_entry:
+            review_text=project_reader.read_document(root,review_entry['path'])['content']
+        result=creator_views.read_episode(episode_id,docs,review_text)
+        by_source={}
+        for shot in episode.get('shots',[]): by_source.setdefault(shot['source'],[]).append(shot)
+        mapped=[]
+        for shot in episode.get('shots',[]):
+            view=creator_views.map_shot(shot)
+            view['scene']=''; mapped.append(view)
+        if mapped and result.get('board'):
+            parsed_by_id={shot['id']:shot for shot in result['board'].get('shots',[])}
+            for row in mapped:
+                parsed=parsed_by_id.get(row['id'])
+                if parsed:
+                    parsed['fields']=row['fields']; parsed['source']=row['source']; parsed['row_index']=row['row_index']
+                    parsed['supplement']=row['supplement']
+                    for key in ('assets','generations','reviews','issues'): parsed[key]=row[key]
+                    if not parsed.get('refs') and row['refs']: parsed['refs']=row['refs']; parsed['refState']='bound'; parsed['refLabel']='有素材'
+                    if not parsed.get('imgs') and row['imgs']: parsed['imgs']=row['imgs']
+        if result.get('board'):
+            image_by_id={p.get('id'):p for p in (result.get('imagePrompts') or [])}
+            video_by_shot={p.get('shot'):p for p in (result.get('videoPrompts') or []) if p.get('shot')}
+            for parsed in result['board'].get('shots',[]):
+                if 'fields' in parsed: continue
+                image_prompts=[image_by_id.get(img.get('id'),{}).get('prompt','') for img in parsed.get('imgs',[])]
+                video=video_by_shot.get(parsed['id'],{})
+                projection={'編號':parsed.get('id',''),
+                    '畫面描述':'；'.join(v for v in (parsed.get('start',''),parsed.get('action',''),parsed.get('end','')) if v),
+                    '攝影機描述':'；'.join(v for v in (parsed.get('framing',''),parsed.get('move','')) if v),
+                    '聲音描述':parsed.get('sound',''),'旁白對白':'',
+                    '時長':(str(parsed.get('sec'))+'s') if parsed.get('secDeclared') else '',
+                    '影片生成方式':video.get('mode',''),'畫面prompt':'\n\n'.join(p for p in image_prompts if p)}
+                parsed['fields']=projection
+                parsed['field_projection']='只讀對照原版分鏡欄位；無法對應的旁白對白保持空白，原始分鏡資料仍完整保留。'
+                storyboard_entry=find_doc(episode.get('files',[]),'分镜.md')
+                parsed['source']=storyboard_entry.get('path') if storyboard_entry else None
+        elif mapped:
+            result['board']={'note':'','blocking':[],'shots':mapped}
+            result['metrics']['shots']=len(mapped)
+            result['metrics']['seconds']=sum(s['sec'] for s in mapped)
+            result['metrics']['avg']=result['metrics']['seconds']/len(mapped)
+        supplements=[(row, item) for row in mapped for item in row.get('supplement',{}).get('prompts',[])]
+        videos=result.get('videoPrompts') or []
+        known={(p.get('id'),p.get('shot')) for p in videos}
+        for row,item in supplements:
+            if item.get('kind','').lower() in ('video','video_prompt','h3','影片提示詞','视频提示词'):
+                prompt={'id':item.get('id') or row['id'],'n':row['n'],'title':item.get('title') or row['id'],
+                        'shot':row['id'],'sec':row['sec'],'mode':item.get('kind',''),'chain':'','prompt':item.get('text','')}
+                if (prompt['id'],prompt['shot']) not in known and prompt['prompt']:
+                    videos.append(prompt); known.add((prompt['id'],prompt['shot']))
+        result['videoPrompts']=videos
+        if not (result.get('settings') or {}).get('items'):
+            cards=[]
+            for entry in snap.get('files',[]):
+                if entry.get('episode') not in (None,episode_id): continue
+                path=Path(entry['path']); match=re.match(r'^([CEP])\d{2}[_-](.+)$',path.stem,re.I)
+                if not match or entry.get('kind') not in ('media','grid'): continue
+                letter=match.group(1).upper(); category={'C':'人物','E':'地點','P':'道具'}[letter]
+                cards.append({'cat':category,'name':match.group(2).replace('_',' ').replace('-',' '),
+                    'fields':{},'desc':[],'locks':[],'lock':None,'designators':[],
+                    'image':entry['path'],'source':entry['path']})
+            if cards:
+                result['settings']={'form':'依既有 C／E／P 視覺資產索引顯示','era':{'period':'','facets':[]},'items':cards}
+        paths={}
+        for canonical,candidates in aliases.items():
+            entry=find_doc(episode.get('files',[]),canonical)
+            paths[canonical]=entry['path'] if entry else None
+        for traditional,simplified in (('劇本.md','剧本.md'),('視覺設定.md','视觉设定.md'),('分鏡.md','分镜.md'),('圖片提示詞.md','图片提示词.md'),('視頻提示詞.md','视频提示词.md'),('剪輯單.md','剪辑单.md')):
+            paths[traditional]=paths.get(simplified)
+        paths['review']=review_entry.get('path') if review_entry else None
+        result['docs']=paths
+        result['hasReviewText']=review_text is not None
+        result['qcPackages']=[{'path':package.get('path'),'name':package.get('name'),'kind':package.get('kind'),'episode':package.get('episode')}
+            for package in episode.get('packages',[])]
+        result['qcIssues']=list(episode.get('issues',[]))
+        available={f['path'] for f in snap.get('files',[]) if f.get('kind') in ('media','grid')}
+        frames={}
+        for shot in (result.get('board') or {}).get('shots',[]):
+            for ref in shot.get('refs',[]):
+                path=ref.get('path') or ref.get('name')
+                if path in available and ref.get('use')=='起始帧': frames[shot['id']]=path
+        film=next((p for p in available if p.endswith(('成片.mp4','final.mp4'))),None)
+        for row in mapped:
+            for item in row.get('supplement',{}).get('media',[]):
+                path=item.get('path')
+                if path in available and item.get('role') in ('起始帧','起始幀','start_frame','first_frame','frame'):
+                    frames.setdefault(row['id'],path)
+        clips={}
+        for cut in (result.get('cutlist') or {}).get('cuts',[]):
+            media=cut.get('media')
+            if not isinstance(media,str): continue
+            storyboard_path=paths.get('分镜.md')
+            base=Path(storyboard_path).parent if storyboard_path else Path(episode_id)
+            candidates=(str(base/Path(media)).replace('\\','/'),media,str(Path(episode_id)/media).replace('\\','/'))
+            path=next((candidate for candidate in candidates if candidate in available),None)
+            if path: clips[cut['id']]=path
+        result['media']={'frames':frames,'clips':clips,'film':film}
+        result['cuts']=[]
+        episode_issues=list(episode.get('issues',[]))
+        if result.get('board') and not mapped:
+            episode_issues=[issue for issue in episode_issues if '找不到八欄分鏡表' not in issue]
+            result['adaptationNotes']=['來源分鏡採原版結構；畫面使用原始欄位只讀呈現，不轉換或改寫來源文件。']
+        result['problems']=episode_issues+result['problems']
+        return result
+
+    def _series(self, root=None):
+        root=Path(root or self.server.root)
+        snap=self._snapshot(root); rows=[]; cast=[]; cast_names=set()
+        wanted=set(self._episode_ids(root))
+        for ep in snap.get('episodes',[]):
+            if str(ep['id']) not in wanted: continue
+            names={Path(f['path']).name for f in ep.get('files',[])}
+            parsed=self._episode(str(ep['id']),root)
+            settings=parsed.get('settings') or {}
+            for item in settings.get('items',[]):
+                if item.get('cat')!='人物' or item.get('name') in cast_names: continue
+                cast_names.add(item['name'])
+                cast.append({'name':item['name'],'ep':str(ep['id']),'desc':(item.get('desc') or [''])[0],
+                    'shots':sum(1 for s in (parsed.get('board') or {}).get('shots',[]) if any(b.get('name')==item['name'] for b in s.get('basis',[])))})
+            has_review=bool(parsed.get('hasReviewText'))
+            rows.append({'id':str(ep['id']),'title':parsed.get('title') or str(ep.get('name',ep['id'])),'has':{
+                'script':bool(parsed.get('script')) or any('劇本' in n or '剧本' in n for n in names),
+                'settings':bool(parsed.get('settings')) or any('設定' in n or '设定' in n for n in names),'board':bool((parsed.get('board') or {}).get('shots')),
+                'imgp':bool(parsed.get('imagePrompts')) or any('圖片提示詞' in n or '图片提示词' in n for n in names),
+                'vidp':bool(parsed.get('videoPrompts')) or any('視頻提示詞' in n or '影片提示詞' in n or '视频提示词' in n for n in names),
+                'cut':any('剪輯單' in n or '剪辑单' in n for n in names),'film':False,
+                'review':has_review},
+                'legacy':False,'shots':(parsed.get('metrics') or {}).get('shots',0),'seconds':(parsed.get('metrics') or {}).get('seconds',0),
+                'cutSeconds':(parsed.get('cutlist') or {}).get('seconds'),'review':creator_views.review_counts(parsed.get('review')),
+                'reviewTone':(parsed.get('review') or {}).get('verdictTone') if has_review else None,'reviewLabel':(parsed.get('review') or {}).get('verdict',''),
+                'must':[{'id':f['id'],'title':f['title']} for f in (parsed.get('review') or {}).get('findings',[]) if f.get('sev')=='must'],
+                'problems':len(parsed.get('problems',[]))+len(ep.get('issues',[]))})
+        metadata=self._metadata(root)
+        return {'title':self._project_title(root),'format':metadata.get('format') or {},'rhythm':metadata.get('rhythm_profile') or None,
+                'lifecycle':metadata.get('lifecycle'),'episodes':rows,'cast':cast}
+
+    def _media_info(self, relative, root=None):
+        root=Path(root or self.server.root)
+        try:
+            target=project_reader._safe(root,relative)
+            if target.suffix.lower()[1:] not in project_reader.MEDIA or not target.is_file(): return self._err(404,'找不到媒體')
+            kind='video' if target.suffix.lower() in ('.mp4','.mov','.webm') else ('audio' if target.suffix.lower() in ('.mp3','.wav','.m4a') else 'image')
+            return self._json(200,{'path':relative,'kind':kind,'contentType':_mime(target.suffix),'size':target.stat().st_size,'readOnly':True,'contentUrl':'/api/media/content?'+urllib.parse.urlencode({'project':self._project_id(root),'path':relative}),'status':'ready'})
+        except (ValueError,OSError): return self._err(400,'媒體路徑無效')
 
     def do_POST(self):
         if not self._safe_host() or not self._origin_ok():
@@ -93,7 +343,7 @@ class Handler(BaseHTTPRequestHandler):
             if not self._authorized():
                 return self._err(403, '工作階段驗證失敗')
             cookie = self._cookie_name() + '=' + self.server.token + '; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200'
-            return self._json(200, {'ok': True}, {'Set-Cookie': cookie})
+            return self._json(200, {'ok': True, 'apiBase': ''}, {'Set-Cookie': cookie})
         if self.path == '/api/shutdown':
             if not self._authorized():
                 return self._err(403, '工作階段驗證失敗')
@@ -108,16 +358,71 @@ class Handler(BaseHTTPRequestHandler):
         parsed = urllib.parse.urlsplit(self.path)
         if parsed.path == '/' or parsed.path in ('/app.js', '/styles.css', '/tokens.css'):
             return self._static(parsed.path)
-        if parsed.path.startswith('/api/') and not self._authorized(cookie=parsed.path == '/api/media'):
+        if parsed.path.startswith('/api/') and not self._authorized(cookie=parsed.path in ('/api/media','/api/media/content')):
             return self._err(403, '工作階段驗證失敗')
         if parsed.path == '/api/health':
             return self._json(200, {'ok': True})
         if parsed.path == '/api/media':
-            return self._media(urllib.parse.parse_qs(parsed.query).get('path', [''])[0])
+            query=urllib.parse.parse_qs(parsed.query)
+            try: root=self._project_root(query.get('project',[''])[0] or None)
+            except ValueError as exc: return self._err(400,str(exc))
+            if 'project' in query: return self._media_info(query.get('path',[''])[0],root)
+            return self._media(urllib.parse.parse_qs(parsed.query).get('path', [''])[0],root)
+        if parsed.path == '/api/media/content':
+            query=urllib.parse.parse_qs(parsed.query)
+            try: root=self._project_root(query.get('project',[''])[0] or None)
+            except ValueError as exc: return self._err(400,str(exc))
+            return self._media(query.get('path', [''])[0],root)
         try:
+            query = urllib.parse.parse_qs(parsed.query)
+            if parsed.path == '/api/projects':
+                projects=[]
+                for ident,root in self.server.projects.items():
+                    rel=root.relative_to(self.server.root).as_posix() if root != self.server.root else '.'
+                    projects.append({'id':ident,'path':rel,'title':self._project_title(root)})
+                return self._json(200, {'projects':projects,'warnings':[]})
+            selected=self._project_root(query.get('project',[''])[0] or None)
+            if parsed.path == '/api/status':
+                snap=project_reader.project_snapshot(selected); meta=self._metadata(selected)
+                return self._json(200, {'project_id':self._project_id(selected),'title':self._project_title(selected),'ownership':meta.get('ownership',{}),'format':meta.get('format',{}),
+                    'language':meta.get('language'),'prompt_language':meta.get('prompt_language'),'video_prompt_language':meta.get('video_prompt_language'),
+                    'video_model_profile':meta.get('video_model_profile',{}),'rhythm_profile':meta.get('rhythm_profile',{}),
+                    'rhythm_profile_problems':meta.get('rhythm_profile_problems',[]),'profile_notes':meta.get('profile_notes',[]),'project_root':'.',
+                    'layout':meta.get('layout',{'mode':'adapted','pinned':False,'roots':{},'nonstandardRoots':[],'unsafeRoots':[]}),
+                    'artifacts':meta.get('artifacts',meta.get('artifact_states',{})),
+                    'authority':meta.get('authority',meta.get('creator_authority',{})),
+                    'lifecycle':meta.get('lifecycle',{'artifact_state':meta.get('artifact_states',{})}),
+                    'issues':snap.get('issues',[])})
+            if parsed.path == '/api/tree':
+                snap=project_reader.project_snapshot(selected)
+                tree=[]
+                for entry in snap['files']:
+                    parts=Path(entry['path']).parts; cursor=tree; parent=''
+                    for part in parts[:-1]:
+                        parent=parent+'/'+part if parent else part
+                        node=next((n for n in cursor if n.get('type')=='directory' and n['name']==part),None)
+                        if node is None:
+                            node={'type':'directory','name':part,'path':parent,'children':[]}; cursor.append(node)
+                        cursor=node['children']
+                    try: size=(selected/Path(entry['path'])).stat().st_size
+                    except OSError: size=0
+                    cursor.append({'type':'text' if entry.get('kind') in ('document','qc','package') else 'media',
+                        'name':entry['name'],'path':entry['path'],'kind':entry.get('kind'),'episode':entry.get('episode'),
+                        'size':size,'oversize':size>project_reader.MAX_FILE,'editable':entry.get('editable',False)})
+                return self._json(200, {'tree':tree,'warnings':snap.get('issues',[])})
+            if parsed.path == '/api/series':
+                return self._json(200, self._series(selected))
+            if parsed.path == '/api/episode':
+                return self._json(200, self._episode(query.get('ep',[''])[0],selected))
+            if parsed.path == '/api/search':
+                ep=query.get('ep',[None])[0]; q=query.get('q',[''])[0]
+                rows=[]
+                for item in self._episode_ids(selected):
+                    if ep is None or item==ep: rows.extend(creator_views.search_entries(self._episode(item,selected)))
+                hits=[r for r in rows if q.casefold() in json.dumps(r,ensure_ascii=False).casefold()]
+                return self._json(200, {'query':q,'scope':'ep' if ep else 'series','hits':hits,'results':hits})
             if parsed.path == '/api/project':
-                snapshot = project_reader.project_snapshot(self.server.root)
-                query = urllib.parse.parse_qs(parsed.query)
+                snapshot = project_reader.project_snapshot(selected)
                 if 'episodes' in query:
                     selected = set(query['episodes'])
                     snapshot['episodes'] = [ep for ep in snapshot['episodes'] if ep['id'] in selected]
@@ -129,8 +434,11 @@ class Handler(BaseHTTPRequestHandler):
                     snapshot['files'] = [entry for entry in snapshot['files'] if entry['path'] in selected]
                 return self._json(200, snapshot)
             if parsed.path == '/api/file':
-                path = urllib.parse.parse_qs(parsed.query).get('path', [''])[0]
-                return self._json(200, project_reader.read_document(self.server.root, path))
+                path = query.get('path', [''])[0]
+                result=project_reader.read_document(selected, path)
+                result['expectedVersion']=result.get('version')
+                result['writable']=result['editable']
+                return self._json(200,result)
             return self._err(404, '找不到端點')
         except PermissionError as exc:
             return self._err(403, str(exc))
@@ -186,11 +494,22 @@ class Handler(BaseHTTPRequestHandler):
             body = json.loads(self.rfile.read(length).decode('utf-8'))
             if not isinstance(body, dict):
                 return self._err(400, 'JSON 內容必須是物件')
-            if not all(isinstance(body.get(key), str) for key in ('path', 'content', 'expected_version')):
-                return self._err(400, 'path、content、expected_version 必須都是字串')
-            result = project_reader.read_document(self.server.root, body.get('path'),
+            expected=body.get('expected_version',body.get('expectedVersion'))
+            query=urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            query_path=query.get('path',[None])[0]
+            query_project=query.get('project',[None])[0]
+            for key, value in (('path',query_path),('project',query_project)):
+                if value is not None and key in body and body[key] != value:
+                    return self._err(400, '保存目標與網址不一致')
+            target_path=body.get('path',query_path)
+            target_project=body.get('project',query_project)
+            if not all(isinstance(value, str) for value in (target_path,body.get('content'),expected)):
+                return self._err(400, 'path、content、expectedVersion 必須都是字串')
+            root=self._project_root(target_project)
+            result = project_reader.read_document(root, target_path,
                                                   content=body.get('content'),
-                                                  expected_version=body.get('expected_version'))
+                                                  expected_version=expected)
+            result['expectedVersion']=result.get('version')
             return self._json(200, result)
         except (json.JSONDecodeError, UnicodeError):
             return self._err(400, 'JSON 或文字編碼格式錯誤')
@@ -201,9 +520,10 @@ class Handler(BaseHTTPRequestHandler):
         except (OSError, TypeError) as exc:
             return self._err(400, '無法保存文件：' + str(exc))
 
-    def _media(self, relative):
+    def _media(self, relative, root=None):
+        root=Path(root or self.server.root)
         try:
-            target = project_reader._safe(self.server.root, relative)
+            target = project_reader._safe(root, relative)
             if target.suffix.lower()[1:] not in project_reader.MEDIA or not target.is_file():
                 return self._err(404, '找不到媒體')
             size = target.stat().st_size
@@ -245,6 +565,10 @@ class Handler(BaseHTTPRequestHandler):
                         break
                     self.wfile.write(chunk)
                     remaining -= len(chunk)
+        except (ConnectionAbortedError, ConnectionResetError, BrokenPipeError):
+            # Browsers cancel media transfers when changing shots; no second
+            # HTTP response can be sent after the stream has been closed.
+            return
         except (ValueError, OSError):
             return self._err(400, '媒體路徑無效')
 

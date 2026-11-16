@@ -15,7 +15,7 @@
 | `visual-asset-prompts` | 從劇本產生角色、場景、道具與狀態的視覺資產提示詞 |
 | `video-prompts` | 產生影片分鏡、時間碼、角色音色與影片生成提示詞 |
 | `storyboard-grid` | 依既有分鏡表、資產卡與資產圖生成同畫幅的 5×5 分鏡草圖，超過 25 鏡自動分頁 |
-| `film-workbench` | 本地創作台：八欄分鏡、分集文件、素材／生成群組／QA 對照、草圖預覽與原文編輯 |
+| `film-workbench` | 七階段本地創作台：八欄分鏡與同鏡圖詞、劇本／設定／提示詞／成片／審查、來源差異與原文編輯 |
 | `h3-prompt-writing` | 為 MiniMax H3 的 T2VA、I2VA、FL2VA、Ref2VA 等模式撰寫提示詞 |
 | `film-quality-control` | 核對分鏡／生成模式、資產版本、生成請求獨立性與雙軌品管證據 |
 | `antigravity-writer` | 全套件文字創作與實質修訂的第一分流提供者（Google Antigravity CLI），由 Codex 協同編排與品管 |
@@ -56,7 +56,7 @@ python skills/film-workbench/scripts/dashboard_server.py /absolute/path/to/proje
 python skills/film-workbench/scripts/dashboard_server.py /absolute/path/to/project --stop
 ```
 
-在本機瀏覽器開啟指令印出的登入網址。創作台直接讀取專案內 Markdown／CSV 八欄表及 QC 登錄，可瀏覽鏡頭、素材、生成群組、QA 紀錄與 25 宮格 PNG，並以原文編輯 Markdown／CSV／TXT。QC JSON 保持唯讀；儲存時如偵測到其他工具已修改檔案，會提示衝突而不覆蓋。
+在本機瀏覽器開啟指令印出的登入網址。創作台沿用原版七階段介面，直接讀取專案 Markdown／CSV 及 QC 登錄；八欄主表不增欄，選鏡後圖與提示詞一起閱讀。既有九欄表的「修改」保留為附註，MD／CSV 差異與多個媒體候選會提示來源；匯入不改專案。原文編輯支援 Markdown／CSV／TXT，QA JSON 與 HTML 原始碼保持唯讀；儲存時如偵測到外部修改，會提示衝突而不覆蓋。操作說明見 [創作台 README](skills/film-workbench/README.md)。
 
 同一專案重複啟動會沿用既有服務；更新程式後，先對該專案執行 `--stop` 再啟動，才能載入新版本。不要將本機登入網址的權杖公開。
 

@@ -3,6 +3,7 @@ import tempfile
 import threading
 import unittest
 import urllib.error
+import urllib.parse
 import urllib.request
 import sys
 from pathlib import Path
@@ -57,6 +58,99 @@ class ServerTests(unittest.TestCase):
         with self.assertRaises(urllib.error.HTTPError) as e: self.req('PUT','/api/file',huge,h)
         self.assertEqual(e.exception.code,413)
         self.assertEqual(e.exception.headers.get('Connection'),'close')
+
+    def test_upstream_editor_query_contract_and_conflicting_targets(self):
+        h={'X-Film-Token':self.token}
+        project=json.load(self.req('GET','/api/projects',headers=h))['projects'][0]
+        url='/api/file?'+urllib.parse.urlencode({'project':project['id'],'path':'notes.md'})
+        doc=json.load(self.req('GET',url,headers=h))
+        self.assertTrue(doc['writable'])
+        updated=json.load(self.req('PUT',url,{'content':'query saved','expectedVersion':doc['version']},h))
+        self.assertEqual((self.root/'notes.md').read_text(encoding='utf-8'),'query saved')
+        with self.assertRaises(urllib.error.HTTPError) as error:
+            self.req('PUT',url,{'path':'other.md','content':'bad','expectedVersion':updated['version']},h)
+        self.assertEqual(error.exception.code,400)
+
+    def test_original_facade_projects_episode_tree_search_and_version_alias(self):
+        ep=self.root/'EP001'; ep.mkdir()
+        (ep/'board.md').write_text('|編號|畫面描述|攝影機描述|聲音描述|旁白對白|時長|影片生成方式|畫面prompt|\n|---|---|---|---|---|---|---|---|\n|S01|雨夜|慢推|雨聲|無|3秒|T2VA|street|',encoding='utf-8')
+        h={'X-Film-Token':self.token}
+        self.assertEqual(json.load(self.req('POST','/api/session',{},h))['apiBase'],'')
+        project=json.load(self.req('GET','/api/projects',headers=h))['projects'][0]
+        self.assertEqual(project['title'],self.root.name)
+        self.assertTrue(json.load(self.req('GET','/api/tree?project='+project['id'],headers=h))['tree'])
+        episode=json.load(self.req('GET','/api/episode?project='+project['id']+'&ep=EP001',headers=h))
+        self.assertEqual(episode['board']['shots'][0]['fields']['畫面描述'],'雨夜')
+        self.assertIsNone(episode['cutlist'])
+        self.assertEqual(len(json.load(self.req('GET','/api/search?project='+project['id']+'&q=%E9%9B%A8',headers=h))['hits']),1)
+        doc=json.load(self.req('GET','/api/file?project='+project['id']+'&path=notes.md',headers=h))
+        updated=json.load(self.req('PUT','/api/file',{'project':project['id'],'path':'notes.md','content':'alias','expectedVersion':doc['version']},h))
+        self.assertTrue(updated['version'])
+
+    def test_workspace_projects_with_same_episode_id_are_scoped(self):
+        roots=[]
+        for name,description in (('project-a','甲資料'),('project-b','乙資料')):
+            root=self.root/name; ep=root/'EP001'; ep.mkdir(parents=True)
+            (root/'short-drama.json').write_text(json.dumps({'project_id':'duplicate-id','title':name}),encoding='utf-8')
+            (ep/'board.md').write_text('|編號|畫面描述|攝影機描述|聲音描述|旁白對白|時長|影片生成方式|畫面prompt|\n|---|---|---|---|---|---|---|---|\n|S01|'+description+'|慢推|雨聲|無|3秒|T2VA|street|',encoding='utf-8')
+            (root/'still.png').write_bytes(b'png')
+            roots.append(name)
+        server,token=serve(self.root); thread=threading.Thread(target=server.serve_forever,daemon=True); thread.start()
+        base='http://127.0.0.1:'+str(server.server_port); headers={'X-Film-Token':token}
+        try:
+            projects=json.load(urllib.request.urlopen(urllib.request.Request(base+'/api/projects',headers=headers)))['projects']
+            self.assertEqual(len(projects),2)
+            self.assertEqual(len({p['id'] for p in projects}),2)
+            ids={p['title']:p['id'] for p in projects}
+            for name,description in (('project-a','甲資料'),('project-b','乙資料')):
+                url=base+'/api/episode?'+urllib.parse.urlencode({'project':ids[name],'ep':'EP001'})
+                episode=json.load(urllib.request.urlopen(urllib.request.Request(url,headers=headers)))
+                self.assertEqual(episode['board']['shots'][0]['fields']['畫面描述'],description)
+                info_url=base+'/api/media?'+urllib.parse.urlencode({'project':ids[name],'path':'still.png'})
+                info=json.load(urllib.request.urlopen(urllib.request.Request(info_url,headers=headers)))
+                self.assertIn('project='+ids[name],info['contentUrl'])
+        finally:
+            server.shutdown(); server.server_close()
+
+    def test_public_upstream_fixture_api_keeps_structured_content(self):
+        fixture=Path(__file__).resolve().parent/'fixtures'/'creator-first'
+        server,token=serve(fixture); thread=threading.Thread(target=server.serve_forever,daemon=True); thread.start()
+        base='http://127.0.0.1:'+str(server.server_port); headers={'X-Film-Token':token}
+        try:
+            project=json.load(urllib.request.urlopen(urllib.request.Request(base+'/api/projects',headers=headers)))['projects'][0]
+            episode=json.load(urllib.request.urlopen(urllib.request.Request(base+'/api/episode?'+urllib.parse.urlencode({'project':project['id'],'ep':'EP001'}),headers=headers)))
+            self.assertEqual((len(episode['script']['scenes']),len(episode['settings']['items']),len(episode['board']['shots']),len(episode['imagePrompts']),len(episode['videoPrompts'])),(2,7,22,4,22))
+            self.assertEqual(episode['metrics']['seconds'],62.0)
+            if (fixture/'剧集'/'EP001'/'剪辑单.md').exists():
+                self.assertGreater(len(episode['cutlist']['cuts']),0)
+            else:
+                self.assertIsNone(episode['cutlist'])
+            series=json.load(urllib.request.urlopen(urllib.request.Request(base+'/api/series?project='+project['id'],headers=headers)))
+            self.assertEqual(series['title'],'公開範例比對')
+            self.assertEqual(series['episodes'][0]['shots'],22)
+        finally:
+            server.shutdown(); server.server_close()
+
+    def test_real_project_read_only_adapter_exposes_existing_assets(self):
+        root=Path(__file__).resolve().parents[4]/'放手，讓你好走'
+        if not root.exists(): self.skipTest('本機唯讀驗收專案未提供')
+        server,token=serve(root); thread=threading.Thread(target=server.serve_forever,daemon=True); thread.start()
+        base='http://127.0.0.1:'+str(server.server_port); headers={'X-Film-Token':token}
+        try:
+            projects=json.load(urllib.request.urlopen(urllib.request.Request(base+'/api/projects',headers=headers)))['projects']
+            self.assertEqual(len(projects),1)
+            project=projects[0]['id']
+            series=json.load(urllib.request.urlopen(urllib.request.Request(base+'/api/series?'+urllib.parse.urlencode({'project':project}),headers=headers)))
+            self.assertEqual(len(series['episodes']),1)
+            episode_id=series['episodes'][0]['id']
+            episode=json.load(urllib.request.urlopen(urllib.request.Request(base+'/api/episode?'+urllib.parse.urlencode({'project':project,'ep':episode_id}),headers=headers)))
+            self.assertEqual(episode['metrics']['shots'],54)
+            self.assertGreater(sum(bool(shot.get('supplement',{}).get('media')) for shot in episode['board']['shots']),0)
+            self.assertGreater(len(episode['videoPrompts']),0)
+            self.assertGreater(len(episode['settings']['items']),0)
+            self.assertTrue(episode['docs']['分鏡.md'])
+        finally:
+            server.shutdown(); server.server_close()
     def test_session_cookie_range_and_path_traversal(self):
         opener=urllib.request.build_opener(urllib.request.HTTPCookieProcessor())
         opener.open(urllib.request.Request(self.base+'/api/session',method='POST',headers={'X-Film-Token':self.token})).read()

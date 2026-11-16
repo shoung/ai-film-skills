@@ -11,6 +11,7 @@ from pathlib import Path, PurePosixPath
 COLUMNS = ['編號', '畫面描述', '攝影機描述', '聲音描述', '旁白對白', '時長', '影片生成方式', '畫面prompt']
 SKIP = {'.git', '.svn', '.hg', '.agents', '.codex', '_work', 'node_modules', '__pycache__', '.venv', 'venv', '.idea', '.vscode'}
 TEXT = {'.md', '.markdown', '.csv', '.txt'}
+READ_ONLY_TEXT = {'.html', '.htm'}
 MEDIA = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'mp3', 'wav', 'm4a', 'mp4', 'mov', 'webm'}
 QC_NAME = re.compile(r'(?:^|[-_.])(qc|qa|review|generation|asset|shot)(?:[-_.]|$)', re.IGNORECASE)
 MAX_FILE = 16 * 1024 * 1024
@@ -88,9 +89,10 @@ def _tables(text):
         header = _unpipe(lines[i])
         separators = _unpipe(lines[i + 1])
         i += 2
-        if len(header) == 8 and len(separators) == 8 and not _is_header(header):
+        legacy = len(header) == 9 and header[0] == COLUMNS[0] and header[2:] == COLUMNS[1:]
+        if len(header) in (8, 9) and len(separators) == len(header) and not (_is_header(header) or legacy):
             issues.append('發現非本規格八欄欄名或欄序的表格，已略過')
-        if len(header) != 8 or not _is_header(header) or len(separators) != 8:
+        if not (_is_header(header) or legacy) or len(separators) != len(header):
             while i < len(lines) and '|' in lines[i]:
                 i += 1
             continue
@@ -101,8 +103,8 @@ def _tables(text):
             row = _unpipe(lines[i])
             i += 1
             row_index += 1
-            if len(row) != 8:
-                issues.append('分鏡資料第 ' + str(row_index) + ' 列欄數不是八欄')
+            if len(row) != len(header):
+                issues.append('分鏡資料第 ' + str(row_index) + ' 列欄數與欄名不符')
                 continue
             shot_id = row[0].strip()
             if shot_id.lower() in ('合計', '總計', '小計', 'total', 'subtotal', '總秒數', '總長度'):
@@ -110,7 +112,10 @@ def _tables(text):
             if not shot_id:
                 issues.append('分鏡資料第 ' + str(row_index) + ' 列缺少鏡號')
                 continue
-            shots.append(_blank_shot(shot_id, '', row_index, dict(zip(header, row))))
+            fields = dict(zip(COLUMNS, row if not legacy else [row[0], *row[2:]]))
+            shot = _blank_shot(shot_id, '', row_index, fields)
+            if legacy and row[1].strip(): shot['supplement'] = {'sources': [], 'media': [], 'prompts': [], 'notes': [row[1].strip()]}
+            shots.append(shot)
     if table_count > 1:
         issues.append('同一文件包含多份八欄分鏡表，已依文件順序合併')
     return columns or [], shots, issues
@@ -122,12 +127,13 @@ def _csv(path):
     if not rows:
         return [], [], ['CSV 分鏡文件是空的']
     header = rows[0]
-    if not _is_header(header):
+    legacy = len(header) == 9 and header[0] == COLUMNS[0] and header[2:] == COLUMNS[1:]
+    if not (_is_header(header) or legacy):
         return [], [], ['CSV 欄名或欄序不符合八欄格式']
     shots, issues = [], []
     for index, row in enumerate(rows[1:], 1):
-        if len(row) != 8:
-            issues.append('CSV 第 ' + str(index) + ' 列欄數不是八欄')
+        if len(row) != len(header):
+            issues.append('CSV 第 ' + str(index) + ' 列欄數與欄名不符')
             continue
         shot_id = row[0].strip()
         if shot_id.lower() in ('合計', '總計', '小計', 'total', 'subtotal', '總秒數', '總長度'):
@@ -135,15 +141,20 @@ def _csv(path):
         if not shot_id:
             issues.append('CSV 第 ' + str(index) + ' 列缺少鏡號')
             continue
-        shots.append(_blank_shot(shot_id, '', index, dict(zip(header, row))))
+        fields = dict(zip(COLUMNS, row if not legacy else [row[0], *row[2:]]))
+        shot = _blank_shot(shot_id, '', index, fields)
+        if legacy and row[1].strip(): shot['supplement'] = {'sources': [], 'media': [], 'prompts': [], 'notes': [row[1].strip()]}
+        shots.append(shot)
     return header, shots, issues
 
 
 def _episode(path):
+    version = next((match.group(0) for part in PurePosixPath(path).parts
+                    for match in [re.search(r'(?:第[一二三四五六七八九十\d]+版|v\d+)', part, re.I)] if match), None)
     for part in PurePosixPath(path).parts:
         if re.fullmatch(r'(?:EP|E|集)?\d{1,4}', part, re.I):
-            return part
-    return None
+            return (version + ' · ' if version else '') + part
+    return version
 
 
 def project_snapshot(root):
@@ -173,13 +184,13 @@ def project_snapshot(root):
                 size = path.stat().st_size
             except OSError:
                 continue
-            if ext in TEXT or ext == '.json':
+            if ext in TEXT | READ_ONLY_TEXT or ext == '.json':
                 if size > (MAX_JSON if ext == '.json' else MAX_FILE):
                     issues.append('文件超過讀取上限：' + rel)
                     continue
-                kind = 'document' if ext in TEXT else 'qc'
+                kind = 'document' if ext in TEXT | READ_ONLY_TEXT else 'qc'
                 entry = {'path': rel, 'name': name, 'kind': kind, 'episode': _episode(rel)}
-                if ext in TEXT:
+                if ext in TEXT | READ_ONLY_TEXT:
                     entry['editable'] = ext in {'.md', '.markdown', '.csv', '.txt'}
                     docs.append((path, entry))
                 else:
@@ -205,7 +216,7 @@ def project_snapshot(root):
                 files.append(entry)
             elif ext[1:] in MEDIA:
                 media.append(rel)
-                kind = 'grid' if ('grid' in name.lower() or 'storyboard' in name.lower()) and ext == '.png' else 'media'
+                kind = 'grid' if ('grid' in name.lower() or 'storyboard' in name.lower() or '宮格' in name) and ext == '.png' else 'media'
                 files.append({'path': rel, 'name': name, 'kind': kind, 'episode': _episode(rel)})
     episodes = {}
 
@@ -234,6 +245,29 @@ def project_snapshot(root):
             shot['source'] = entry['path']
             shot['_columns'] = columns
             ep['shots'].append(shot)
+    # Collapse duplicate MD/CSV rows into one logical shot before package linking.
+    # Keep every source candidate so the view adapter can expose conflicts explicitly.
+    for ep in episodes.values():
+        logical, by_id = [], {}
+        for shot in ep['shots']:
+            candidate = {'path': shot['source'], 'fields': dict(shot['fields']),
+                         'notes': list(shot.get('supplement', {}).get('notes', []))}
+            existing = by_id.get(shot['id'])
+            if existing is None:
+                shot['_legacy_sources'] = [candidate]
+                by_id[shot['id']] = shot
+                logical.append(shot)
+                continue
+            existing['_legacy_sources'].append(candidate)
+            warning = '同一分集存在重複鏡號來源，已合併為待確認的邏輯鏡頭'
+            if warning not in ep['issues']:
+                ep['issues'].append(warning)
+            if candidate['fields'] != existing['fields']:
+                existing['issues'].append('同鏡號來源內容不同，待確認來源：' + candidate['path'])
+            existing['supplement'] = existing.get('supplement') or {'notes': []}
+            existing['supplement']['notes'].extend(candidate['notes'])
+            existing['issues'].extend(issue for issue in shot['issues'] if issue not in existing['issues'])
+        ep['shots'][:] = logical
     columns = COLUMNS[:]
     records = []
     for path, package, entry in packages:
@@ -346,8 +380,10 @@ def project_snapshot(root):
             shot.pop('_columns', None)
     if not any(ep['shots'] for ep in episodes.values()):
         issues.append('找不到八欄分鏡表')
-    return {'name': root.name, 'episodes': list(episodes.values()), 'files': files,
+    snapshot = {'name': root.name, 'episodes': list(episodes.values()), 'files': files,
             'issues': issues, 'columns': columns, 'media': media}
+    from legacy_adapter import enrich
+    return enrich(snapshot, root)
 
 
 def _file_lock(path):
@@ -358,7 +394,7 @@ def _file_lock(path):
 
 def read_document(root, relative_path, content=None, expected_version=None):
     path = _safe(root, relative_path)
-    if path.suffix.lower() not in TEXT | {'.json'}:
+    if path.suffix.lower() not in TEXT | READ_ONLY_TEXT | {'.json'}:
         raise PermissionError('此檔案不可透過文字 API 讀取或編輯')
     try:
         raw = path.read_bytes()
@@ -376,7 +412,7 @@ def read_document(root, relative_path, content=None, expected_version=None):
         return {'path': PurePosixPath(str(relative_path).replace('\\', '/')).as_posix(),
                 'content': decoded, 'version': version, 'editable': editable}
     if not editable:
-        raise PermissionError('QC JSON 為唯讀文件')
+        raise PermissionError('此文件為唯讀來源')
     if not isinstance(content, str) or not isinstance(expected_version, str):
         raise ValueError('保存內容或版本格式不正確')
     data = content.encode('utf-8')

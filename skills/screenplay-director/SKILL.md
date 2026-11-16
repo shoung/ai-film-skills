@@ -36,6 +36,7 @@ description: "從靈感到可執行劇本的流程總控；用於階段判斷、
 
 ## 專案內技能銜接
 
+- 分鏡草圖：[storyboard-grid](../storyboard-grid/SKILL.md)；需要理解既有分鏡表時，使用正式資產卡與資產圖片生成同畫幅的 25 宮格總覽，缺件先警示並停止生成。
 - 劇本總控：[screenplay-director](../screenplay-director/SKILL.md)
 - 劇本框架：[screenplay-framework](../screenplay-framework/SKILL.md)
 - 劇本寫作：[screenplay-writing](../screenplay-writing/SKILL.md)

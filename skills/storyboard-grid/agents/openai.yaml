@@ -1,0 +1,4 @@
+interface:
+  display_name: "25 宮格分鏡草圖"
+  short_description: "依既有分鏡表與資產卡、參考圖，生成同畫幅並可自動分頁的 25 宮格草圖"
+  default_prompt: "請使用 $storyboard-grid，先檢查專案分鏡表、資產卡與資產圖片，再生成與影片同畫幅的 25 宮格分鏡草圖。"

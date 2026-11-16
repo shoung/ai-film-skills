@@ -53,6 +53,7 @@ I2VA/FL2VA/L2VA 限單連續鏡頭為本工作流程的穩定性政策，非模�
 
 ## 專案內技能銜接
 
+- 分鏡草圖：[storyboard-grid](../storyboard-grid/SKILL.md)；使用者要求視覺化既有分鏡表時，交由此技能生成 25 宮格草圖，須先備妥資產卡與資產圖片；純製表不自動生圖。
 - 劇本總控：[screenplay-director](../screenplay-director/SKILL.md) | 劇本寫作：[screenplay-writing](../screenplay-writing/SKILL.md)
 - 視覺資產：[visual-asset-prompts](../visual-asset-prompts/SKILL.md) | 影片提示詞：[video-prompts](../video-prompts/SKILL.md)
 - 製作品管：[film-quality-control](../film-quality-control/SKILL.md)

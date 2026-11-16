@@ -13,6 +13,7 @@
 | `dialogue-expert` | 逐句診斷台詞，分析角色語言與提出替換建議 |
 | `visual-asset-prompts` | 從劇本產生角色、場景、道具與狀態的視覺資產提示詞 |
 | `video-prompts` | 產生影片分鏡、時間碼、角色音色與影片生成提示詞 |
+| `storyboard-grid` | 依既有分鏡表、資產卡與資產圖生成同畫幅的 5×5 分鏡草圖，超過 25 鏡自動分頁 |
 | `h3-prompt-writing` | 為 MiniMax H3 的 T2VA、I2VA、FL2VA、Ref2VA 等模式撰寫提示詞 |
 | `film-quality-control` | 核對分鏡／生成模式、資產版本、生成請求獨立性與雙軌品管證據 |
 | `antigravity-writer` | 全套件文字創作與實質修訂的第一分流提供者（Google Antigravity CLI），由 Codex 協同編排與品管 |
@@ -34,6 +35,8 @@
    ```
 
 4. 建議依序使用：`screenplay-framework` → `screenplay-doctor` → `screenplay-writing`；需要影像製作時，再接續使用 `visual-asset-prompts` 與 `video-prompts`。
+
+   已備妥分鏡表、正式資產卡及參考圖片後，可使用 `$storyboard-grid` 生成便於理解分鏡的草圖總覽。每張固定 25 宮格、無格間留白，僅以格線分隔，每格左上角只標原鏡號；整張及各格沿用影片寬高比，超過 25 鏡續頁，末頁空格留白。缺少分鏡表或必要資產卡／圖片時，先警示並停止生成。詳見 [25 宮格分鏡草圖](skills/storyboard-grid/SKILL.md)。
 
 5. 影像製作建議一併安裝 `screenplay-director`、`visual-asset-prompts`、`video-prompts`、`h3-prompt-writing`、`film-quality-control` 與 `antigravity-writer`，保留其相對目錄。共享啟動提問／SHOUNG 文字 LOGO 由導演提供，品管詳細規則、模板及檢查器由 `film-quality-control` 提供，文字創作路由由 `antigravity-writer` 規範。單獨安裝可做其原有純文字工作；缺少共享依賴時，依入口的替代規則標記限制，不能宣稱完成未執行的視覺 QA。
 

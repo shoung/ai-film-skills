@@ -22,6 +22,7 @@ description: "從劇本提取角色、場景、道具及多狀態視覺資產，
 
 ## 專案內技能銜接
 
+- 分鏡草圖：[storyboard-grid](../storyboard-grid/SKILL.md)；分鏡表、正式資產卡及資產圖片齊備後，可交接生成 25 宮格總覽，文字資產提示詞不能替代參考圖片。
 - 劇本總控：[screenplay-director](../screenplay-director/SKILL.md)
 - 劇本框架：[screenplay-framework](../screenplay-framework/SKILL.md)
 - 劇本寫作：[screenplay-writing](../screenplay-writing/SKILL.md)

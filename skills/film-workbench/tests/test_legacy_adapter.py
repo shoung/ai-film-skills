@@ -57,11 +57,13 @@ class LegacyAdapterTests(unittest.TestCase):
                 p.write_text('|'+ '|'.join(header)+'|\n|'+ '|'.join(['---']*9)+'|\n|S01|註記|原畫面|攝影|聲音|台詞|5|I2VA|提示詞|', encoding='utf-8')
             else:
                 p.write_text(','.join(header)+'\n'+','.join(row), encoding='utf-8')
-        shot = project_snapshot(self.root)['episodes'][0]['shots'][0]
+        episode = project_snapshot(self.root)['episodes'][0]
+        shot = episode['shots'][0]
         self.assertEqual(len(shot['supplement']['sources']), 2)
         self.assertEqual(shot['fields']['畫面描述'], '原畫面')
         self.assertEqual(shot['supplement']['sources'][1]['fields']['畫面描述'], '不同畫面')
-        self.assertTrue(any('待確認' in issue for issue in shot['issues']))
+        self.assertTrue(any('來源' in issue and '差異' in issue for issue in episode['issues']))
+        self.assertTrue(shot['supplement']['source_resolution']['conflicts'])
 
     def test_version_scope_and_media_prompt_boundaries(self):
         v6 = self.root / '第六版分鏡'; v6.mkdir()

@@ -460,6 +460,11 @@ a.shotref:hover { color: var(--zs-signal-ink); border-color: var(--zs-signal); }
 .revdot.could { color: var(--zs-ink-700); background: var(--zs-surface-2); }
 .revdot svg { width: 12px; height: 12px; }
 .table-card { overflow-x: auto; }
+.material-library { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: var(--zs-space-4); margin-top: var(--zs-space-4); }
+.material-item { min-width: 0; padding: var(--zs-space-3); }
+.material-item video { display: block; width: 100%; max-height: 320px; object-fit: contain; background: var(--zs-media); }
+.material-item p, .source-versions { overflow-wrap: anywhere; }
+.source-info { color: var(--zs-ink-700); }
 .shot-table { width: 100%; border-collapse: collapse; font-size: var(--zs-text-13); }
 .shot-table th { text-align: left; font-size: var(--zs-text-12); color: var(--zs-ink-500); font-weight: var(--zs-weight-semibold); padding: var(--zs-space-2) var(--zs-space-2h); border-bottom: 1px solid var(--zs-line); white-space: nowrap; background: var(--zs-surface); }
 .shot-table td { padding: var(--zs-space-2) var(--zs-space-2h); border-bottom: 1px solid var(--zs-line); vertical-align: top; }

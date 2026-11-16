@@ -1,8 +1,10 @@
 """Safe reader for local storyboard projects (Python standard library only)."""
 import csv
 import hashlib
+import html
 import json
 import os
+import posixpath
 import re
 import tempfile
 import threading
@@ -43,6 +45,36 @@ def _safe(root, relative):
 
 def _version(data):
     return hashlib.sha256(data).hexdigest()
+
+
+def _comparison_value(value):
+    value = html.unescape(str(value or ''))
+    value = re.sub(r'<br\s*/?>', '\n', value, flags=re.I)
+    return re.sub(r'\s+', ' ', value).strip()
+
+
+def _explicit_master_paths(root, docs, files):
+    scanned = {entry['path'] for entry in files}
+    masters = set()
+    for path, entry in docs:
+        if path.suffix.lower() not in {'.md', '.markdown'}:
+            continue
+        try:
+            text = path.read_text(encoding='utf-8-sig')
+        except (OSError, UnicodeError):
+            continue
+        for label, destination in re.findall(r'\[([^\]\n]+)\]\(([^)\n]+)\)', text):
+            if not re.search(r'主表|正式主表', label):
+                continue
+            if '://' in destination or destination.startswith(('/', '\\')):
+                continue
+            relative = posixpath.normpath(posixpath.join(PurePosixPath(entry['path']).parent.as_posix(), destination.split('#', 1)[0].replace('\\', '/')))
+            if relative.startswith('../') or relative in {'.', '..'}:
+                continue
+            target = PurePosixPath(relative).as_posix()
+            if target in scanned and Path(target).suffix.lower() in {'.md', '.markdown', '.csv'}:
+                masters.add(target)
+    return masters
 
 
 def _unpipe(line):
@@ -230,6 +262,7 @@ def project_snapshot(root):
         episode['files'].append(entry)
         if entry['kind'] == 'grid':
             episode['grids'].append(entry)
+    master_paths = _explicit_master_paths(root, docs, files)
     for path, entry in docs:
         try:
             if path.suffix.lower() == '.csv':
@@ -245,29 +278,81 @@ def project_snapshot(root):
             shot['source'] = entry['path']
             shot['_columns'] = columns
             ep['shots'].append(shot)
-    # Collapse duplicate MD/CSV rows into one logical shot before package linking.
-    # Keep every source candidate so the view adapter can expose conflicts explicitly.
+    # Resolve same-episode exports as source copies; keep canonical fields from authority.
     for ep in episodes.values():
-        logical, by_id = [], {}
+        docs_here = list(dict.fromkeys(s['source'] for s in ep['shots']))
+        explicit = sorted(master_paths.intersection(docs_here))
+        markdown = sorted(p for p in docs_here if Path(p).suffix.lower() in {'.md', '.markdown'})
+        master_conflict = len(explicit) > 1
+        primary = (explicit[0] if explicit else (markdown[0] if markdown else (sorted(docs_here)[0] if docs_here else None)))
+        reason = ('入口存在多個主表宣告，暫採排序首項' if master_conflict else
+                  '入口明確標示主表' if explicit else ('原生 Markdown 優先' if markdown else '唯一可用來源'))
+        by_id = {}
+        ordered = []
         for shot in ep['shots']:
-            candidate = {'path': shot['source'], 'fields': dict(shot['fields']),
-                         'notes': list(shot.get('supplement', {}).get('notes', []))}
-            existing = by_id.get(shot['id'])
-            if existing is None:
-                shot['_legacy_sources'] = [candidate]
-                by_id[shot['id']] = shot
-                logical.append(shot)
-                continue
-            existing['_legacy_sources'].append(candidate)
-            warning = '同一分集存在重複鏡號來源，已合併為待確認的邏輯鏡頭'
-            if warning not in ep['issues']:
-                ep['issues'].append(warning)
-            if candidate['fields'] != existing['fields']:
-                existing['issues'].append('同鏡號來源內容不同，待確認來源：' + candidate['path'])
-            existing['supplement'] = existing.get('supplement') or {'notes': []}
-            existing['supplement']['notes'].extend(candidate['notes'])
-            existing['issues'].extend(issue for issue in shot['issues'] if issue not in existing['issues'])
-        ep['shots'][:] = logical
+            by_id.setdefault(shot['id'], []).append(shot)
+        source_ids = {source: {s['id'] for s in ep['shots'] if s['source'] == source} for source in docs_here}
+        id_conflicts = []
+        if len(docs_here) > 1:
+            authority_ids = source_ids.get(primary, set())
+            for source in docs_here:
+                if source == primary: continue
+                missing = sorted(authority_ids - source_ids[source])
+                extra = sorted(source_ids[source] - authority_ids)
+                if missing or extra:
+                    id_conflicts.append({'source': source, 'missing_ids': missing, 'extra_ids': extra})
+        resolution = {'primary': primary, 'reason': reason, 'resolved': not master_conflict,
+                      'alternatives': [p for p in docs_here if p != primary],
+                      'conflicts': list(id_conflicts)}
+        if master_conflict:
+            resolution['conflicts'].append({'kind': 'multiple_explicit_masters', 'paths': explicit})
+        ep['source_resolution'] = resolution
+        shot_order = list(dict.fromkeys([s['id'] for s in ep['shots'] if s['source'] == primary] + [s['id'] for s in ep['shots']]))
+        for shot_id in shot_order:
+            candidates = by_id[shot_id]
+            # Repeated rows in a single document remain malformed, not an alias.
+            per_source = {}
+            for candidate in candidates:
+                per_source.setdefault(candidate['source'], []).append(candidate)
+            duplicate_sources = [p for p, rows in per_source.items() if len(rows) > 1]
+            if duplicate_sources:
+                message = '同一分集存在重複鏡號：' + shot_id
+                if message not in ep['issues']: ep['issues'].append(message)
+                for candidate in candidates:
+                    if candidate['source'] in duplicate_sources:
+                        candidate['issues'].append('同一文件內鏡號重複')
+            preferred = next((s for s in candidates if s['source'] == primary), candidates[0])
+            ordered.append(preferred)
+            sources = []
+            details = []
+            for source in docs_here:
+                candidate = next((s for s in per_source.get(source, [])), None)
+                if not candidate: continue
+                raw_diffs = [field for field in COLUMNS if candidate['fields'].get(field) != preferred['fields'].get(field)]
+                diffs = [field for field in COLUMNS if _comparison_value(candidate['fields'].get(field)) != _comparison_value(preferred['fields'].get(field))]
+                record = {'path': source, 'fields': dict(candidate['fields']), 'notes': list(candidate.get('supplement', {}).get('notes', [])),
+                          'differences': raw_diffs, 'substantive_differences': diffs}
+                sources.append(record)
+                details.append(record)
+                if diffs and source != primary:
+                    resolution['conflicts'].append({'source': source, 'shot_id': shot_id, 'fields': diffs})
+            preferred['_legacy_sources'] = sources
+            preferred['_source_resolution'] = dict(resolution, differences=details)
+            for candidate in candidates:
+                if candidate is preferred: continue
+                preferred['issues'].extend(issue for issue in candidate['issues'] if issue not in preferred['issues'])
+                preferred.setdefault('supplement', {'notes': []})['notes'].extend(candidate.get('supplement', {}).get('notes', []))
+        ep['shots'][:] = ordered
+        substantive = any(any(record['substantive_differences'] for record in s.get('_legacy_sources', []) if record['path'] != primary) for s in ordered)
+        if master_conflict:
+            msg = '同分集有多個主表宣告，請確認權威來源'
+            if msg not in ep['issues']: ep['issues'].append(msg)
+        if id_conflicts or (substantive and not explicit and len(docs_here) > 1):
+            differences = []
+            if id_conflicts: differences.append('鏡號缺漏或多出')
+            if substantive: differences.append('欄位內容不同')
+            msg = '分鏡來源存在差異（' + '、'.join(differences) + '），請檢視來源明細'
+            if msg not in ep['issues']: ep['issues'].append(msg)
     columns = COLUMNS[:]
     records = []
     for path, package, entry in packages:
@@ -359,8 +444,7 @@ def project_snapshot(root):
                     target.append(record_view)
     for ep in episodes.values():
         shot_ids = [shot['id'] for shot in ep['shots']]
-        if len({shot['source'] for shot in ep['shots']}) > 1:
-            ep['issues'].append('偵測到多份分鏡來源，請確認是否屬於同一集')
+        ep['issues'][:] = list(dict.fromkeys(ep['issues']))
         if len(shot_ids) != len(set(shot_ids)):
             ep['issues'].append('同一分集存在重複鏡號，QC 對應可能有歧義')
         if len(ep['packages']) > 1:

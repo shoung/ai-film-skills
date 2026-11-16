@@ -64,12 +64,15 @@ def enrich(snapshot, root):
         for shot in episode['shots']:
             prior = by_id.get(shot['id'])
             source_records = shot.pop('_legacy_sources', None)
+            source_resolution = shot.pop('_source_resolution', None)
             source = {'path': shot['source'], 'fields': dict(shot['fields']),
-                      'notes': list(shot.get('supplement', {}).get('notes', []))}
+                      'notes': list(shot.get('supplement', {}).get('notes', [])), 'differences': []}
             if prior is None:
                 sources = source_records or [source]
                 notes = [note for record in sources for note in record.get('notes', [])]
                 shot['supplement'] = {'sources': sources, 'media': [], 'prompts': [], 'notes': notes}
+                if source_resolution:
+                    shot['supplement']['source_resolution'] = source_resolution
                 by_id[shot['id']] = shot
                 merged.append(shot)
             else:
@@ -81,9 +84,9 @@ def enrich(snapshot, root):
                     for item in shot[key]:
                         if item not in prior[key]: prior[key].append(item)
         episode['shots'][:] = merged
-        for shot in episode['shots']:
-            if len(shot['supplement']['sources']) > 1:
-                episode['issues'].append('同鏡號存在多份 MD／CSV 來源，差異待確認')
+        if episode.get('source_resolution'):
+            episode['source_resolution']['conflicts'] = list(episode['source_resolution'].get('conflicts', []))
+        episode['issues'][:] = list(dict.fromkeys(episode['issues']))
 
     entries = {entry['path']: entry for entry in snapshot['files']}
     grid_index = {}

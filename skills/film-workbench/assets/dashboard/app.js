@@ -452,8 +452,8 @@ function nextFor(row) {
       ask: `請為 ${id} 寫${missing.doc}。`, href: `#/${id}`,
     };
   }
-  if (!row.has.cut) return { kind: "cut", rank: 2, text: "出片後寫剪輯單", ask: `請為 ${id} 寫剪輯單.md。`, href: `#/${id}/film` };
-  if (!row.has.film) return { kind: "render", rank: 3, text: "按剪輯單渲染成片", ask: `請按 ${id} 的剪輯單.md 渲染成片。`, href: `#/${id}/film` };
+  if (!row.has.cut && !row.has.film) return { kind: "materials", rank: 2, text: row.mediaCount ? "檢視影片素材" : "依提示詞製作影片素材", detail: "剪輯單是選用的後製旁表，不影響素材瀏覽", ask: "", href: `#/${id}/film` };
+  if (row.has.cut && !row.has.film) return { kind: "render", rank: 3, text: "按剪輯單渲染成片", ask: `請按 ${id} 的剪輯單.md 渲染成片。`, href: `#/${id}/film` };
   if (!row.has.review) return { kind: "review", rank: 4, text: "審查這一集", ask: `請審查 ${id}。`, href: `#/${id}` };
   if (!reviewPassed(row)) {
     const provisional = /待補/.test(row.reviewLabel || "");
@@ -1022,7 +1022,7 @@ function stageMeta(row, E) {
     settings: row.has.settings ? (E?.settings ? `${E.settings.items.length} 項` : "已寫") : "未寫",
     board: row.has.board ? `${row.shots || "—"} 鏡` : "未寫",
     prompts: row.has.imgp || row.has.vidp ? (prompts != null ? `${prompts} 條` : "已寫") : "未寫",
-    film: row.has.film ? fmt(row.cutSeconds || row.seconds) : row.has.cut ? "未渲染" : "未剪",
+    film: row.has.film ? fmt(row.cutSeconds || row.seconds) : row.has.cut ? "未渲染" : row.mediaCount ? `${row.mediaCount} 份素材` : "素材待製作",
     review: row.has.review ? (findings ? `${findings} 條` : "已審") : "無",
   };
 }
@@ -1064,8 +1064,13 @@ const gap = (value, goal) => `<span class="status">${esc(gapText(value, goal))}<
 function statusMark(ok, words = ["符合", "偏離"]) {
   return `<span class="status ${ok ? "ok" : "warn"}">${icon(ok ? "check" : "alert")}${ok ? words[0] : words[1]}</span>`;
 }
+function fieldHTML(value) {
+  return esc(value ?? "未提供").replace(/&lt;br\s*\/?&gt;/gi, "<br>");
+}
 function problemNotices(E) {
-  return (E.problems || []).map((problem) => `<div class="notice" role="note">${icon("alert")}<span>${esc(problem)}</span></div>`).join("");
+  const resolution = E.sourceResolution || {};
+  const sourceInfo = resolution.primary && resolution.alternatives?.length ? `<div class="notice source-info" role="note"><span>分鏡主表：${esc(fileLabel(resolution.primary))}；保留 ${resolution.alternatives.length} 份其他輸出供對照。${resolution.resolved === false ? "主表宣告尚待確認，請核對來源。" : resolution.conflicts?.length ? "來源差異可在單鏡詳情查看。" : "已核對為相同內容，序列化表示差異不視為錯誤。"}</span></div>` : "";
+  return sourceInfo + [...new Set(E.problems || [])].map((problem) => `<div class="notice" role="note">${icon("alert")}<span>${esc(problem)}</span></div>`).join("");
 }
 function editButton(path, at = "", label = "編輯原文", cls = "btn") {
   if (!path) return "";
@@ -1095,7 +1100,7 @@ function context(E) {
     const targets = Array.isArray(cut.group_shots) && cut.group_shots.length ? cut.group_shots : cut.shot ? [cut.shot] : [];
     for (const shotId of targets) if (!clipByShot[shotId]) clipByShot[shotId] = { path: E.media.clips[cut.id], cut };
   }
-  const promptByShot = Object.fromEntries((E.videoPrompts || []).map((prompt) => [prompt.shot, prompt]));
+  const promptByShot = Object.fromEntries((E.videoPrompts || []).flatMap((prompt) => [...new Set([prompt.shot, ...(prompt.shot_ids || [])].filter(Boolean))].map((id) => [id, prompt])));
   return {
     E,
     shots,
@@ -1206,7 +1211,7 @@ function viewOverview() {
       ${(() => { const pRows = rhythmProfileRows(profile); return pRows.length ? `<div class="card profile">${pRows.map(([key, value]) => `<div class="row"><span class="k">${key}</span><span class="v">${esc(value)}</span></div>`).join("")}</div>`
       : `<div class="empty"><p>還沒有設定節奏目標，暫不對照平均鏡長、近景類與旁白佔比。</p>${askButton("請為這部劇提出節奏目標，我確認後寫入專案。", false, "複製給助手")}</div>`; })()}</div>
     <div><div class="section-t"><h3>人物</h3><span class="n">來自各集視覺設定</span></div>
-      ${series.cast.length ? `<div class="card cast">${series.cast.map((person) => `<a class="person" href="#/${esc(person.ep)}/settings/${encodeURIComponent(settingKey("人物", person.name))}"><span class="tile">${esc(person.name[0] || "?")}</span><div><div class="pn">${esc(person.name)}</div><div class="pd">${esc(person.desc)}</div><div class="pd">${esc(person.ep)} · ${person.shots} 鏡</div></div></a>`).join("")}</div>` : '<div class="empty"><p>視覺設定寫好後，人物會列在這裡。</p></div>'}</div>
+      ${series.cast.length ? `<div class="card cast">${series.cast.map((person) => `<a class="person" href="#/${esc(person.ep)}/settings/${encodeURIComponent(settingKey("人物", person.name))}"><span class="tile">${esc(person.name[0] || "?")}</span><div><div class="pn">${esc(person.name)}</div><div class="pd">${esc(person.desc)}</div><div class="pd">${esc(person.ep)} · ${person.shots == null ? "尚無明示鏡號關聯" : `${person.shots} 鏡`}</div></div></a>`).join("")}</div>` : '<div class="empty"><p>視覺設定寫好後，人物會列在這裡。</p></div>'}</div>
   </div>
 
   <div class="section-t"><h3>專案檔案</h3><span class="n">${projectFiles.length} 份</span><a class="more" href="#/files">全部檔案 →</a></div>
@@ -1418,12 +1423,12 @@ function viewBoard(row, E, arg, q) {
     return `<article class="card shot ${arg === shot.id ? "sel" : ""}" data-shot="${esc(shot.id)}" id="c-${esc(shot.id)}" tabindex="0" aria-label="${esc(`${shot.n} ${shot.title}`)}">
       ${thumb(C, shot)}
       <div><div class="hd"><span class="no">${esc(shot.n)}</span><span class="tt">${esc(shot.title)}</span></div>
-        <div class="pills"><span class="pill">${esc(displayLabel(shot.scale) || "未寫景別")}</span>${shot.moveKind ? `<span class="pill">${esc(shot.moveKind)}</span>` : ""}<span class="pill">${esc(num(shot.sec))} 秒</span></div>
-        <div class="chain"><div><b>起</b><span>${esc(shot.start)}</span></div><div><b>動</b><span>${esc(shot.action)}</span></div><div><b>終</b><span>${esc(shot.end)}</span></div></div>
+        <div class="pills"><span class="pill">${esc(displayLabel(shot.scale) || "未寫景別")}</span>${shot.moveKind ? `<span class="pill">${fieldHTML(shot.moveKind)}</span>` : ""}<span class="pill">${esc(num(shot.sec))} 秒</span></div>
+        <div class="chain"><div><b>起</b><span>${fieldHTML(shot.start)}</span></div><div><b>動</b><span>${fieldHTML(shot.action)}</span></div><div><b>終</b><span>${fieldHTML(shot.end)}</span></div></div>
         <div class="sndrow">${soundFlags(C, shot)}</div></div>
       ${found.length ? `<span class="rev"><span class="revdot ${found[0].sev === "must" ? "" : found[0].sev}">${icon("alert")}${found.length}</span></span>` : ""}
     </article>`; }).join("");
-  const rows = list.map((shot) => `<tr data-shot="${esc(shot.id)}" class="${arg === shot.id ? "sel" : ""}">${SHOT_COLUMNS.map((column) => `<td>${esc(shot.fields?.[column] ?? "未提供")}</td>`).join("")}</tr>`).join("");
+  const rows = list.map((shot) => `<tr data-shot="${esc(shot.id)}" class="${arg === shot.id ? "sel" : ""}">${SHOT_COLUMNS.map((column) => `<td>${fieldHTML(shot.fields?.[column])}</td>`).join("")}</tr>`).join("");
   return `<div class="wrap" data-view="board">
   <div class="head"><div><h2>分鏡</h2><div class="sub">${C.shots.length} 鏡 · ${num(C.total)} 秒${C.scenes.length ? ` · ${C.scenes.length} 場` : ""}</div></div>
     <div class="actions"><div class="seg" role="group" aria-label="佈局"><button type="button" data-layout="cards" aria-pressed="${S.layout === "cards"}">${icon("grid")} 卡片</button><button type="button" data-layout="list" aria-pressed="${S.layout === "list"}">${icon("list")} 列表</button></div>
@@ -1443,6 +1448,15 @@ function viewBoard(row, E, arg, q) {
     ${list.length ? (S.layout === "cards" ? `<div class="shots">${cards}</div>` : `<div class="card table-card"><table class="shot-table"><thead><tr>${SHOT_COLUMNS.map((column) => `<th>${esc(column)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div>`) : '<div class="empty"><p>沒有符合篩選的鏡頭。</p></div>'}
   <span hidden data-query="${esc(qs)}"></span>
   </div>`;
+}
+
+function sourceVersionsHTML(shot, supplement) {
+  const sources = supplement.sources || [];
+  if (!sources.length) return "";
+  const resolution = supplement.source_resolution || {};
+  const substantive = sources.some((source) => source.substantive_differences?.length);
+  const status = resolution.resolved === false ? "來源主表尚待確認，以下保留原文供核對。" : resolution.primary ? `目前讀取：${fileLabel(resolution.primary)}。${substantive ? "其他來源有欄位差異，以下保留原文供核對。" : "其他輸出內容相同；換行與表格編碼差異不視為錯誤。"}` : sources.length > 1 ? "來源尚未指定主表，請核對差異。" : "保留原始八欄來源供核對。";
+  return `<div class="source-versions"><p>${esc(status)}</p>${sources.map((source, i) => `<details name="sources-${esc(shot.id)}"><summary>查看來源：${esc(source.path?.split(/[\\/]/).pop() || `來源 ${i + 1}`)}</summary>${source.substantive_differences?.length ? `<p>差異欄位：${esc(source.substantive_differences.join("、"))}</p>` : ""}${Object.entries(source.fields || {}).map(([key, value]) => `<p><strong>${esc(key)}</strong>　${fieldHTML(value || "未提供")}</p>`).join("")}${source.notes?.length ? `<p>${esc(source.notes)}</p>` : ""}</details>`).join("")}</div>`;
 }
 
 function renderInspector(row, E, id) {
@@ -1476,8 +1490,8 @@ function renderInspector(row, E, id) {
     ...((supplement.prompts || []).filter((item) => item?.text).map((item, i) => ({ text: item.text, label: item.kind || "補充提示詞", source: item.source || "補充資料", id: `supp-${shot.id}-${i}` }))),
     ...(shot.keyframe ? [{ text: shot.keyframe, label: "首幀提示詞", source: "分鏡", id: `kf-${shot.id}` }] : []),
     ...(shot.closing_keyframe ? [{ text: shot.closing_keyframe, label: "尾幀提示詞", source: "分鏡", id: `ckf-${shot.id}` }] : []),
-    ...(prompt?.prompt ? [{ text: prompt.prompt, label: prompt.mode ? `影片提示詞 · ${prompt.mode}` : "影片提示詞", source: prompt.source || "影片提示詞", id: prompt.id || `vp-${shot.id}` }] : []),
-  ].filter((item, index, items) => items.findIndex((candidate) => candidate.text === item.text) === index);
+    ...(prompt?.prompt ? [{ text: prompt.prompt, label: prompt.mode ? `影片提示詞 · ${prompt.mode}` : "影片提示詞", source: typeof prompt.source === "object" ? prompt.source.path : prompt.source || "影片提示詞", id: prompt.id || `vp-${shot.id}` }] : []),
+  ].filter((item, index, items) => items.findIndex((candidate) => candidate.text.replace(/\r\n/g, "\n").trim() === item.text.replace(/\r\n/g, "\n").trim()) === index);
   const startAt = C.shots.slice(0, index).reduce((sum, item) => sum + item.sec, 0);
   const cut = C.cuts.find((item) => item.shot === shot.id || (Array.isArray(item.group_shots) && item.group_shots.includes(shot.id)));
   const qs = location.hash.includes("?") ? `?${location.hash.split("?")[1]}` : "";
@@ -1503,7 +1517,7 @@ function renderInspector(row, E, id) {
       </section>
       <section class="ins-prompts"><h4>提示詞 <span class="muted small">依來源分開顯示</span></h4>
         ${promptItems.length ? promptItems.map((item) => `<article class="ins-prompt"><header><b>${esc(item.label)}</b><span>${esc(item.source)}</span><span class="act">${copyButton(item.text, item.id)}</span></header><button class="prompt clamp" type="button" data-act="expand" aria-label="展開或收合${esc(item.label)}">${esc(item.text)}</button></article>`).join("") : `<div class="ins-missing">尚無此鏡提示詞</div>`}
-        ${supplement.sources?.length ? `<div class="source-warning">有 ${supplement.sources.length} 個原始來源版本，內容可能有差異，尚待確認；不會自動合併或預設挑選。${supplement.sources.map((source, i) => { const label = source.label || source.name || source.path?.split(/[\\/]/).pop() || `來源 ${i + 1}`; return `<details class="source-versions" name="sources-${esc(shot.id)}"><summary>切換查看：${esc(label)}</summary>${Object.entries(source.fields || {}).map(([key, value]) => `<p><strong>${esc(key)}</strong>　${esc(value || "未提供")}</p>`).join("")}${source.notes ? `<p>${esc(source.notes)}</p>` : ""}</details>`; }).join("")}</div>` : ""}
+        ${sourceVersionsHTML(shot, supplement)}
       </section>
     </div>
     ${qcRegistryHtml([shot])}
@@ -1511,19 +1525,19 @@ function renderInspector(row, E, id) {
       <div class="facts">
         <div class="fact"><div class="k">時長</div><div class="v">${esc(num(shot.sec))} 秒 · 第 ${fmt(startAt)} 起</div></div>
         <div class="fact"><div class="k">場次</div><div class="v">${shot.scene ? `<a href="#/${esc(row.id)}/script/${esc(shot.scene)}">${esc(sceneShort(shot.scene))} ${esc(placeOf(C, shot.scene))}</a>` : "—"}</div></div>
-        <div class="fact"><div class="k">景別 / 機位</div><div class="v">${esc(shot.framing || "—")}</div></div>
-        <div class="fact"><div class="k">運鏡</div><div class="v">${esc(shot.move || "—")}</div></div>
+        <div class="fact"><div class="k">景別 / 機位</div><div class="v">${fieldHTML(shot.framing || "—")}</div></div>
+        <div class="fact"><div class="k">運鏡</div><div class="v">${fieldHTML(shot.move || "—")}</div></div>
       </div>
     </div>
-    ${shot.purpose ? `<div class="ins-sec"><h4>目的</h4><p class="purpose">${esc(shot.purpose)}</p></div>` : ""}
+    ${shot.purpose ? `<div class="ins-sec"><h4>目的</h4><p class="purpose">${fieldHTML(shot.purpose)}</p></div>` : ""}
     ${(() => { const block = (E.board?.blocking || []).find((item) => item.scene === shot.scene); return block ? `<div class="ins-sec" id="insBlocking"><h4>場景站位</h4>${blockingRows(block)}</div>` : ""; })()}
-    <div class="ins-sec"><h4>動作</h4><div class="timeline3"><div><b>起點</b>${esc(shot.start || "—")}</div><div class="mid"><b>本鏡動作</b>${esc(shot.action || "—")}</div><div><b>終點</b>${esc(shot.end || "—")}</div></div></div>
-    <div class="ins-sec"><h4>聲音</h4><p>${esc(shot.sound || "—")}</p>${cut?.subs.length ? `<div>${cut.subs.map((sub) => `<span class="subline">「${esc(sub.text)}」</span>`).join("")}</div>` : ""}</div>
-    ${shot.screenText || cut?.texts.length ? `<div class="ins-sec"><h4>畫面文字</h4>${shot.screenText ? `<p>${esc(shot.screenText)}</p>` : ""}${(cut?.texts || []).map((text) => `<div><span class="stxt">${esc(text.style)}｜${esc(text.items.join("｜"))}</span></div>`).join("")}</div>` : ""}
+    <div class="ins-sec"><h4>動作</h4><div class="timeline3"><div><b>起點</b>${fieldHTML(shot.start || "—")}</div><div class="mid"><b>本鏡動作</b>${fieldHTML(shot.action || "—")}</div><div><b>終點</b>${fieldHTML(shot.end || "—")}</div></div></div>
+    <div class="ins-sec"><h4>聲音</h4><p>${fieldHTML(shot.sound || "—")}</p>${cut?.subs.length ? `<div>${cut.subs.map((sub) => `<span class="subline">「${esc(sub.text)}」</span>`).join("")}</div>` : ""}</div>
+    ${shot.screenText || cut?.texts.length ? `<div class="ins-sec"><h4>畫面文字</h4>${shot.screenText ? `<p>${fieldHTML(shot.screenText)}</p>` : ""}${(cut?.texts || []).map((text) => `<div><span class="stxt">${esc(text.style)}｜${esc(text.items.join("｜"))}</span></div>`).join("")}</div>` : ""}
     <div class="ins-sec"><h4>畫面裡有</h4><div class="pills">${shot.basis.map((entry) => `<a class="pill" href="#/${esc(row.id)}/settings/${encodeURIComponent(settingKey(entry.cat, entry.name))}" title="${esc(`控制：${entry.ctl}`)}">${icon(entry.cat === "人物" || entry.cat === "造型" ? "person" : categoryKey(entry.cat) === "地點" ? "place" : "prop")}${esc(entry.name)}</a>`).join("") || '<span class="muted">無</span>'}</div></div>
     <div class="ins-sec"><h4>參考圖</h4><div class="refstate ${refClass}">${icon(refClass === "bound" ? "check" : refClass === "pending" || refClass === "missing" ? "alert" : "text")}<div><b>${esc(refLabel)}</b>${shot.refs.map((slot) => `<div class="slot">${slot.order}. ${esc(slot.name)}${slot.use ? ` · ${esc(slot.use)}` : ""} · <span class="mono">${esc(slot.path || slot.target)}</span></div>`).join("")}</div></div>
       ${shot.imgs.length ? `<div class="pills">${shot.imgs.map((img) => `<a class="pill id" href="#/${esc(row.id)}/prompts/image?id=${esc(img.id)}" title="${esc(`${img.name} · 控制：${img.ctl}`)}">${esc(img.id)}</a>`).join("")}</div>` : ""}</div>
-    <div class="ins-sec"><h4>八欄資料</h4><dl class="ins-fields">${SHOT_COLUMNS.map((key) => `<div><dt>${esc(key)}</dt><dd>${esc(shot.fields?.[key] ?? "未提供")}</dd></div>`).join("")}</dl></div>
+    <div class="ins-sec"><h4>八欄資料</h4><dl class="ins-fields">${SHOT_COLUMNS.map((key) => `<div><dt>${esc(key)}</dt><dd>${fieldHTML(shot.fields?.[key])}</dd></div>`).join("")}</dl></div>
     ${supplement.notes ? `<div class="ins-sec"><h4>來源附註</h4><p>${esc(supplement.notes)}</p></div>` : ""}
     <div>${editButton(E.docs["分鏡.md"], shot.id, "在分鏡.md 裡編輯這一鏡")}</div>
   </div>`;
@@ -1579,7 +1593,7 @@ function viewSettings(row, E) {
       ${anchor ? `<div class="anchor"><b>外觀特徵</b>${esc(anchor)}</div>` : ""}
       ${rest.map(([k, value]) => `<div class="field"><span class="muted">${esc(k)}：</span>${esc(value)}</div>`).join("")}
       ${itemLocks.map((lock) => `<div class="lock"><div class="ln">${icon("lock")}連戲鎖《${esc(lock.name)}》</div><span class="surface">${esc(lock.surface)}</span><div class="muted small">${lockReach(C, lock)} · 設定圖、首幀及未靠參考圖鎖住外觀的影片提示詞需帶上這段</div></div>`).join("")}
-      ${C.shots.length ? `<div class="presence"><div class="pk"><span>出現在 ${seen.size} 鏡</span>${seen.size ? `<a href="#/${esc(row.id)}/board?entity=${encodeURIComponent(key)}">在分鏡裡篩出 ${icon("right")}</a>` : ""}</div>
+      ${C.shots.length ? `<div class="presence"><div class="pk"><span>${!seen.size && E.source_format?.["視覺設定.md"] === "native" ? "尚無明示鏡號關聯" : `出現在 ${seen.size} 鏡`}</span>${seen.size ? `<a href="#/${esc(row.id)}/board?entity=${encodeURIComponent(key)}">在分鏡裡篩出 ${icon("right")}</a>` : ""}</div>
         <div class="pstrip" aria-hidden="true">${C.shots.map((shot) => `<i data-css="flex-grow:${Math.max(0.2, shot.sec)}" class="${seen.has(shot.id) ? (locked.has(shot.id) || locked.has("全集") ? "lk" : "on") : ""}" title="${esc(shot.n)}"></i>`).join("")}</div></div>` : ""}
     </article>`;
   };
@@ -1682,13 +1696,25 @@ function highlight(text, keys) {
   return out + esc(raw.slice(last));
 }
 
+function viewMaterialLibrary(row, E) {
+  const candidates = new Map((E.media?.candidates || []).map((media) => [media.path, {path:media.path, shots:new Set(media.shot_ids || [])}]));
+  for (const shot of E.board?.shots || []) for (const media of shot.supplement?.media || []) {
+    if (!media.path || !(media.kind === "video" || /\.(mp4|mov|webm)$/i.test(media.path))) continue;
+    const entry = candidates.get(media.path) || { path: media.path, shots: new Set() };
+    for (const id of media.shot_ids?.length ? media.shot_ids : [shot.id]) entry.shots.add(id);
+    candidates.set(media.path, entry);
+  }
+  const request = `請依 ${row.id} 已選定的實際素材規劃剪輯旁表，列出取用檔案、鏡號、入出點、字幕與聲音落點；先確認素材選擇，不改八欄分鏡，也不直接生成或渲染。`;
+  return `<div class="wrap" data-view="film"><div class="head"><div><h2>影片素材與後製</h2><div class="sub">${candidates.size} 份素材候選；未經選定的片段不代表正式成片</div></div></div>${problemNotices(E)}<p>剪輯單是選用的後製旁表。瀏覽、挑選素材不需要先寫剪輯單。</p><button class="btn" data-copy="${esc(request)}">規劃剪輯（選用）</button><div class="material-library">${[...candidates.values()].map((candidate) => `<article class="card material-item"><h3>${esc([...candidate.shots].join("、") || "未對應目前分鏡的素材")}</h3><video src="${esc(mediaUrl(candidate.path))}" controls playsinline preload="metadata"></video><p>${esc(candidate.path.split("/").pop())}</p><span class="muted">素材候選，尚未確認剪輯取用</span></article>`).join("") || '<div class="empty">尚無影片素材，可先依現有提示詞製作；無須建立剪輯單。</div>'}</div></div>`;
+}
+
 function viewFilm(row, E, arg, q) {
-  if (!row.has.cut && !row.has.film) return missingView(row, "film");
+  if (!row.has.cut && !row.has.film) return viewMaterialLibrary(row, E);
   const C = context(E);
   const CL = E.cutlist;
   const aspectCss = aspectRatioCss(S.series?.format?.aspect_ratio);
   const clipsTab = arg === "clips";
-  const header = `<div class="head"><div><h2>剪輯與成片</h2><div class="sub">${CL ? `${C.cuts.length} 段 · ${fmt(C.cutTotal)} · 按剪輯單排列` : "只有成片，剪輯單還沒寫"}</div></div>
+  const header = `<div class="head"><div><h2>剪輯與成片</h2><div class="sub">${CL ? `${C.cuts.length} 段 · ${fmt(C.cutTotal)} · 按剪輯單排列` : "已有成片；剪輯旁表為選用資料"}</div></div>
       <div class="actions"><div class="seg"><a href="#/${esc(row.id)}/film" ${clipsTab ? "" : 'aria-current="page"'}>成片</a><a href="#/${esc(row.id)}/film/clips" ${clipsTab ? 'aria-current="page"' : ""}>逐鏡素材</a></div>${editButton(E.docs["剪輯單.md"], "", "編輯剪輯單")}</div></div>`;
   if (row.has.cut && !CL) return `<div class="wrap" data-view="film">${header}${problemNotices(E)}<div data-raw="${esc(E.docs["剪輯單.md"])}"><div class="loading">正在讀取原文…</div></div></div>`;
   if (clipsTab) return `<div class="wrap" data-view="film">${header}${problemNotices(E)}${clipsView(C, row)}</div>`;

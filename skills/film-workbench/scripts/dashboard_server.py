@@ -20,9 +20,11 @@ from pathlib import Path
 try:
     from . import project_reader
     from . import creator_views
+    from . import project_documents
 except ImportError:
     import project_reader
     import creator_views
+    import project_documents
 
 RUNTIME = Path(os.environ.get('LOCALAPPDATA') or tempfile.gettempdir()) / 'film-workbench'
 STATIC_ROOT = Path(__file__).resolve().parents[1] / 'assets' / 'dashboard'
@@ -165,51 +167,20 @@ class Handler(BaseHTTPRequestHandler):
         snap=self._snapshot(root)
         episode=next((ep for ep in snap.get('episodes',[]) if str(ep['id'])==episode_id),None)
         if episode is None: raise ValueError('找不到分集')
-        docs={}
-        aliases={'剧本.md':('劇本.md','剧本.md','screenplay.md'),'视觉设定.md':('視覺設定.md','视觉设定.md','設定.md','设定.md'),
-                 '分镜.md':('分鏡.md','分镜.md','storyboard.md','board.md'),'图片提示词.md':('圖片提示詞.md','图片提示词.md','圖片提示詞.txt'),
-                 '视频提示词.md':('視頻提示詞.md','影片提示詞.md','视频提示词.md','視頻提示詞.txt'),'剪辑单.md':('剪輯單.md','剪辑单.md')}
-        hints={'剧本.md':('剧本','劇本','screenplay'),'视觉设定.md':('视觉设定','視覺設定','设定集','视觉资产','視覺資產'),'分镜.md':('分镜','分鏡','storyboard'),'图片提示词.md':('图片提示词','圖片提示詞','image prompt'),'视频提示词.md':('视频提示词','視頻提示詞','影片提示词','video prompt','h3'),'剪辑单.md':('剪辑单','剪輯單','cut list')}
-        def find_doc(entries, canonical):
-            exact=next((f for f in entries if Path(f['path']).name.casefold() in {n.casefold() for n in aliases[canonical]}),None)
-            if exact: return exact
-            if canonical=='分镜.md' and episode.get('shots'):
-                source=episode['shots'][0].get('source')
-                source_entry=next((f for f in entries if f.get('path')==source),None)
-                if source_entry: return source_entry
-            for entry in entries:
-                file_path=Path(entry['path']); name=file_path.name.casefold(); parent=file_path.parent.name.casefold()
-                is_guide=any(word in name for word in ('说明','說明','readme','guide','使用方法'))
-                if canonical=='剧本.md' and any(word in name for word in ('台词','台詞','dialogue')): continue
-                if not is_guide and any(h.casefold() in name or (canonical in ('剧本.md','视觉设定.md') and h.casefold() in parent) for h in hints[canonical]): return entry
-            return None
-        for canonical,candidates in aliases.items():
-            entry=find_doc(episode.get('files',[]),canonical)
-            if entry:
-                docs[canonical]=project_reader.read_document(root,entry['path'])['content']
+        selected_documents=project_documents.collect(root,episode)
+        docs=selected_documents['texts']
+        paths=selected_documents['paths']
         review_text=None
         review_entry=next((f for f in snap.get('files',[]) if
             (f.get('episode')==episode_id or re.search(r'(?<![A-Za-z0-9])'+re.escape(episode_id)+r'(?=[-_ .])',Path(f['path']).stem,re.I))
             and ('審查' in f['name'] or '审查' in f['name'] or f['name'].lower().endswith('review.md'))),None)
         if review_entry:
             review_text=project_reader.read_document(root,review_entry['path'])['content']
-        result=creator_views.read_episode(episode_id,docs,review_text)
-        by_source={}
-        for shot in episode.get('shots',[]): by_source.setdefault(shot['source'],[]).append(shot)
-        mapped=[]
-        for shot in episode.get('shots',[]):
-            view=creator_views.map_shot(shot)
-            view['scene']=''; mapped.append(view)
-        if mapped and result.get('board'):
-            parsed_by_id={shot['id']:shot for shot in result['board'].get('shots',[])}
-            for row in mapped:
-                parsed=parsed_by_id.get(row['id'])
-                if parsed:
-                    parsed['fields']=row['fields']; parsed['source']=row['source']; parsed['row_index']=row['row_index']
-                    parsed['supplement']=row['supplement']
-                    for key in ('assets','generations','reviews','issues'): parsed[key]=row[key]
-                    if not parsed.get('refs') and row['refs']: parsed['refs']=row['refs']; parsed['refState']='bound'; parsed['refLabel']='有素材'
-                    if not parsed.get('imgs') and row['imgs']: parsed['imgs']=row['imgs']
+        result=creator_views.read_episode(episode_id,docs,review_text,
+            native_shots=episode.get('shots') or None,
+            video_documents=selected_documents['video_documents'] or None,
+            image_documents=selected_documents['image_documents'] or None)
+        mapped=(result.get('board') or {}).get('shots',[]) if episode.get('shots') else []
         if result.get('board'):
             image_by_id={p.get('id'):p for p in (result.get('imagePrompts') or [])}
             video_by_shot={p.get('shot'):p for p in (result.get('videoPrompts') or []) if p.get('shot')}
@@ -225,17 +196,13 @@ class Handler(BaseHTTPRequestHandler):
                     '影片生成方式':video.get('mode',''),'畫面prompt':'\n\n'.join(p for p in image_prompts if p)}
                 parsed['fields']=projection
                 parsed['field_projection']='只讀對照原版分鏡欄位；無法對應的旁白對白保持空白，原始分鏡資料仍完整保留。'
-                storyboard_entry=find_doc(episode.get('files',[]),'分镜.md')
-                parsed['source']=storyboard_entry.get('path') if storyboard_entry else None
-        elif mapped:
-            result['board']={'note':'','blocking':[],'shots':mapped}
-            result['metrics']['shots']=len(mapped)
-            result['metrics']['seconds']=sum(s['sec'] for s in mapped)
-            result['metrics']['avg']=result['metrics']['seconds']/len(mapped)
+                parsed['source']=paths.get('分镜.md')
         supplements=[(row, item) for row in mapped for item in row.get('supplement',{}).get('prompts',[])]
         videos=result.get('videoPrompts') or []
         known={(p.get('id'),p.get('shot')) for p in videos}
+        covered_shots={shot_id for prompt in videos for shot_id in ([prompt.get('shot')] + list(prompt.get('shot_ids') or [])) if shot_id}
         for row,item in supplements:
+            if row['id'] in covered_shots: continue
             if item.get('kind','').lower() in ('video','video_prompt','h3','影片提示詞','视频提示词'):
                 prompt={'id':item.get('id') or row['id'],'n':row['n'],'title':item.get('title') or row['id'],
                         'shot':row['id'],'sec':row['sec'],'mode':item.get('kind',''),'chain':'','prompt':item.get('text','')}
@@ -254,14 +221,24 @@ class Handler(BaseHTTPRequestHandler):
                     'image':entry['path'],'source':entry['path']})
             if cards:
                 result['settings']={'form':'依既有 C／E／P 視覺資產索引顯示','era':{'period':'','facets':[]},'items':cards}
-        paths={}
-        for canonical,candidates in aliases.items():
-            entry=find_doc(episode.get('files',[]),canonical)
-            paths[canonical]=entry['path'] if entry else None
-        for traditional,simplified in (('劇本.md','剧本.md'),('視覺設定.md','视觉设定.md'),('分鏡.md','分镜.md'),('圖片提示詞.md','图片提示词.md'),('視頻提示詞.md','视频提示词.md'),('剪輯單.md','剪辑单.md')):
-            paths[traditional]=paths.get(simplified)
+        for item in (result.get('settings') or {}).get('items',[]):
+            name=str(item.get('parent') or item.get('name') or '').lstrip('@')
+            expected={'人物':'C','造型':'C','地點':'E','地点':'E','道具':'P'}.get(item.get('cat'))
+            matches=[]
+            for file in episode.get('files',[]):
+                path=Path(file['path'])
+                if path.suffix.lower() not in ('.png','.jpg','.jpeg','.webp'): continue
+                stem=re.sub(r'^[CEP]\d+[_-]','',path.stem,flags=re.I).lstrip('@')
+                category_match=not expected or path.stem.upper().startswith(expected) or path.stem.startswith('@')
+                if category_match and name and (stem==name or stem.startswith(name+'_') or stem.startswith(name+'各')):
+                    matches.append(file['path'])
+            if len(matches)==1:
+                item['image']=matches[0]
+                item['imageEvidence']='檔名對應素材候選，不代表實際生成提交紀錄'
         paths['review']=review_entry.get('path') if review_entry else None
         result['docs']=paths
+        result['documentSources']={kind:[d['path'] for d in sources] for kind,sources in selected_documents['sources'].items()}
+        result['sourceResolution']=episode.get('source_resolution') or {}
         result['hasReviewText']=review_text is not None
         result['qcPackages']=[{'path':package.get('path'),'name':package.get('name'),'kind':package.get('kind'),'episode':package.get('episode')}
             for package in episode.get('packages',[])]
@@ -287,13 +264,22 @@ class Handler(BaseHTTPRequestHandler):
             candidates=(str(base/Path(media)).replace('\\','/'),media,str(Path(episode_id)/media).replace('\\','/'))
             path=next((candidate for candidate in candidates if candidate in available),None)
             if path: clips[cut['id']]=path
-        result['media']={'frames':frames,'clips':clips,'film':film}
+        linked_candidates={}
+        for shot in (result.get('board') or {}).get('shots',[]):
+            for candidate in shot.get('supplement',{}).get('media',[]):
+                if candidate.get('kind')=='video' and candidate.get('path'):
+                    linked_candidates.setdefault(candidate['path'],set()).add(shot['id'])
+        candidate_paths=sorted({file['path'] for file in episode.get('files',[]) if Path(file['path']).suffix.lower() in ('.mp4','.mov','.webm')})
+        candidates=[{'path':path,'shot_ids':sorted(linked_candidates.get(path,set())),
+                     'kind':'video','role':'video_candidate'}
+                    for path in candidate_paths]
+        result['media']={'frames':frames,'clips':clips,'film':film,'candidates':candidates}
         result['cuts']=[]
         episode_issues=list(episode.get('issues',[]))
         if result.get('board') and not mapped:
             episode_issues=[issue for issue in episode_issues if '找不到八欄分鏡表' not in issue]
             result['adaptationNotes']=['來源分鏡採原版結構；畫面使用原始欄位只讀呈現，不轉換或改寫來源文件。']
-        result['problems']=episode_issues+result['problems']
+        result['problems']=list(dict.fromkeys(episode_issues+result['problems']))
         return result
 
     def _series(self, root=None):
@@ -309,20 +295,21 @@ class Handler(BaseHTTPRequestHandler):
                 if item.get('cat')!='人物' or item.get('name') in cast_names: continue
                 cast_names.add(item['name'])
                 cast.append({'name':item['name'],'ep':str(ep['id']),'desc':(item.get('desc') or [''])[0],
-                    'shots':sum(1 for s in (parsed.get('board') or {}).get('shots',[]) if any(b.get('name')==item['name'] for b in s.get('basis',[])))})
+                    'shots':None if parsed.get('source_format',{}).get('視覺設定.md')=='native' else sum(1 for s in (parsed.get('board') or {}).get('shots',[]) if any(b.get('name')==item['name'] for b in s.get('basis',[])))})
             has_review=bool(parsed.get('hasReviewText'))
             rows.append({'id':str(ep['id']),'title':parsed.get('title') or str(ep.get('name',ep['id'])),'has':{
                 'script':bool(parsed.get('script')) or any('劇本' in n or '剧本' in n for n in names),
                 'settings':bool(parsed.get('settings')) or any('設定' in n or '设定' in n for n in names),'board':bool((parsed.get('board') or {}).get('shots')),
                 'imgp':bool(parsed.get('imagePrompts')) or any('圖片提示詞' in n or '图片提示词' in n for n in names),
                 'vidp':bool(parsed.get('videoPrompts')) or any('視頻提示詞' in n or '影片提示詞' in n or '视频提示词' in n for n in names),
-                'cut':any('剪輯單' in n or '剪辑单' in n for n in names),'film':False,
+                'cut':bool(parsed.get('cutlist')) or any('剪輯單' in n or '剪辑单' in n for n in names),'film':bool((parsed.get('media') or {}).get('film')),
                 'review':has_review},
                 'legacy':False,'shots':(parsed.get('metrics') or {}).get('shots',0),'seconds':(parsed.get('metrics') or {}).get('seconds',0),
                 'cutSeconds':(parsed.get('cutlist') or {}).get('seconds'),'review':creator_views.review_counts(parsed.get('review')),
                 'reviewTone':(parsed.get('review') or {}).get('verdictTone') if has_review else None,'reviewLabel':(parsed.get('review') or {}).get('verdict',''),
                 'must':[{'id':f['id'],'title':f['title']} for f in (parsed.get('review') or {}).get('findings',[]) if f.get('sev')=='must'],
-                'problems':len(parsed.get('problems',[]))+len(ep.get('issues',[]))})
+                'mediaCount':len((parsed.get('media') or {}).get('candidates',[])),
+                'problems':len(set(parsed.get('problems',[])))})
         metadata=self._metadata(root)
         return {'title':self._project_title(root),'format':metadata.get('format') or {},'rhythm':metadata.get('rhythm_profile') or None,
                 'lifecycle':metadata.get('lifecycle'),'episodes':rows,'cast':cast}

@@ -1309,7 +1309,7 @@ function gauge(check, C) {
     foot = `當前平均每鏡 ${num(check.value)} 秒（綠區為 ±0.5 秒參考帶）`;
   } else if (check.key === "close") {
     fill = check.value; zone = [check.goal, 1]; tick = check.goal;
-    foot = `${C.E.metrics.closeCount || 0} / ${C.shots.length} 鏡；${C.E.metrics.unsized} 鏡沒寫景別`;
+    foot = `${C.E.metrics.closeCount || 0} / ${C.shots.length} 鏡；${C.E.metrics.unsized} 鏡景別未辨識或複合`;
   } else {
     fill = check.value; zone = [0, check.goal]; tick = check.goal;
     foot = "按實際念出聲的字數算；[OS] 畫外對白不計入旁白";
@@ -1366,7 +1366,7 @@ function stripHTML(C, row, selected, keep) {
   const bars = C.shots.map((shot) => {
     const rung = SCALE_RUNG[displayLabel(shot.scale)];
     const on = !keep || keep(shot);
-    const tip = `${shot.title} · ${num(shot.sec)}s · ${displayLabel(shot.scale) || "未寫景別"}`;
+    const tip = `${shot.title} · ${num(shot.sec)}s · ${displayLabel(shot.scale) || "景別未辨識或複合"}`;
     cursor += shot.sec;
     return `<button class="sb ${rung ? `s${rung}` : "unsized"} ${selected === shot.id ? "sel" : ""} ${on ? "" : "dim"}" type="button" data-css="flex-grow:${Math.max(0.2, shot.sec)}" data-shot="${esc(shot.id)}" data-tip-b="${esc(shot.n)}" data-tip="${esc(tip)}" aria-label="${esc(`${shot.n} ${tip}`)}">${shot.close ? '<span class="cl"></span>' : ""}${esc(String(Number(shot.n) || shot.n))}</button>`;
   }).join("");
@@ -1383,7 +1383,7 @@ function stripHTML(C, row, selected, keep) {
     <div class="strip-bars">${bars}</div>
     ${goal && goal <= total ? `<div class="strip-target" data-css="left:${(goal / total) * 100}%"><b>目標 ${goal}s</b></div>` : ""}
     <div class="strip-axis">${ticks.join("")}</div></div>
-    <div class="legend">${[["遠景/全景", 1], ["中景", 2], ["中近景", 3], ["近景", 4], ["特寫/細節", 5], ["大特寫", 6]].map(([label, rung]) => `<span><i class="s${rung}"></i>${label}</span>`).join("")}<span><i class="hatch"></i>未寫景別</span><span><span class="cl-key"></span>頂部短線 = 近景類</span></div>`;
+    <div class="legend">${[["遠景/全景", 1], ["中景", 2], ["中近景", 3], ["近景", 4], ["特寫/細節", 5], ["大特寫", 6]].map(([label, rung]) => `<span><i class="s${rung}"></i>${label}</span>`).join("")}<span><i class="hatch"></i>景別未辨識或複合</span><span><span class="cl-key"></span>頂部短線 = 近景類</span></div>`;
 }
 
 function soundFlags(C, shot) {
@@ -1423,7 +1423,7 @@ function viewBoard(row, E, arg, q) {
     return `<article class="card shot ${arg === shot.id ? "sel" : ""}" data-shot="${esc(shot.id)}" id="c-${esc(shot.id)}" tabindex="0" aria-label="${esc(`${shot.n} ${shot.title}`)}">
       ${thumb(C, shot)}
       <div><div class="hd"><span class="no">${esc(shot.n)}</span><span class="tt">${esc(shot.title)}</span></div>
-        <div class="pills"><span class="pill">${esc(displayLabel(shot.scale) || "未寫景別")}</span>${shot.moveKind ? `<span class="pill">${fieldHTML(shot.moveKind)}</span>` : ""}<span class="pill">${esc(num(shot.sec))} 秒</span></div>
+        <div class="pills"><span class="pill">${esc(displayLabel(shot.scale) || "景別未辨識或複合")}</span>${shot.moveKind ? `<span class="pill">${fieldHTML(shot.moveKind)}</span>` : ""}<span class="pill">${esc(num(shot.sec))} 秒</span></div>
         <div class="chain"><div><b>起</b><span>${fieldHTML(shot.start)}</span></div><div><b>動</b><span>${fieldHTML(shot.action)}</span></div><div><b>終</b><span>${fieldHTML(shot.end)}</span></div></div>
         <div class="sndrow">${soundFlags(C, shot)}</div></div>
       ${found.length ? `<span class="rev"><span class="revdot ${found[0].sev === "must" ? "" : found[0].sev}">${icon("alert")}${found.length}</span></span>` : ""}
@@ -1440,7 +1440,7 @@ function viewBoard(row, E, arg, q) {
     ${metric("總時長", `${num(C.total)}<small> 秒</small>`, C.target != null ? `目標 ${C.target} 秒 · ${gapText(C.total, C.target)}` : "沒有設每集目標", null)}
     ${metric("平均鏡長", M.avg != null ? `${num(M.avg)}<small> 秒</small>` : "—", P?.target_avg_shot_seconds != null && M.avg != null ? `目標 ${num(P.target_avg_shot_seconds)} 秒 · ${gapText(M.avg, P.target_avg_shot_seconds)}` : "沒有設定節奏目標", null)}
     ${metric("近景類", M.close != null ? pct(M.close) : "—", P?.close_shot_share_min != null ? `不少於 ${pct(P.close_shot_share_min)}` : "沒有設定節奏目標", P?.close_shot_share_min != null && M.close != null ? M.close >= P.close_shot_share_min : null)}
-    ${metric("沒寫景別", `${M.unsized}<small> 鏡</small>`, "算不進近景類佔比", M.unsized === 0)}
+    ${metric("景別未辨識或複合", `${M.unsized}<small> 鏡</small>`, "算不進近景類佔比", M.unsized === 0)}
   </div>
   <section class="card strip-card"><div class="strip-head"><h3>節奏條</h3><span class="muted small">寬度 = 時長，顏色 = 景別；點一格看這一鏡</span></div>${stripHTML(C, row, arg, sceneFilter || entityFilter ? keep : null)}</section>
   <div class="board-tools"><div class="pills">${[null, ...C.scenes.map((scene) => scene.id)].map((id) => `<a class="pill ${sceneFilter === id && !entityFilter ? "on" : ""}" href="#/${esc(row.id)}/board${id ? `?scene=${esc(id)}` : ""}">${id ? `${esc(sceneShort(id))} ${esc(placeOf(C, id))}` : "全部"}</a>`).join("")}</div>
@@ -1499,7 +1499,7 @@ function renderInspector(row, E, id) {
   let refClass = shot.refState;
   let refLabel = shot.refLabel;
   if (startSlot && !frame) { refClass = "missing"; refLabel = "寫了起始幀，但專案裡找不到這張圖"; }
-  else if (frame) { refClass = "bound"; refLabel = "已繫結起始幀"; }
+  else if (frame && !shot.refs.length && refClass !== "missing") { refClass = "pending"; refLabel = "已關聯起始幀候選，參考待確認"; }
   host.hidden = false;
   document.body.classList.add("with-inspector");
   $("#scrim").hidden = !(typeof matchMedia === "function" && matchMedia("(max-width: 760px)").matches);
@@ -1513,7 +1513,7 @@ function renderInspector(row, E, id) {
         ${imageItems.length ? `${!hasSingleShotImage ? `<div class="ins-missing">尚無此鏡單獨圖片；以下為整張分鏡草圖或關聯參考圖。</div>` : ""}<div class="ins-image-grid">${imageItems.map((item) => { const role = String(item.role || item.kind || "").toLowerCase(); const grid = isGridMedia(item); const first = /first|start|首幀|起始幀/.test(role) || item.verified; const last = /last|end|尾幀/.test(role); const label = grid ? `整張分鏡草圖${item.shot_ids?.length ? ` · ${gridCoverage(item)}` : ""}` : first ? "首幀" : last ? "尾幀" : /reference|asset|設定卡|參考/.test(role) ? "設定參考圖" : "未確認圖片候選"; return `<a href="${esc(mediaUrl(item.path))}" target="_blank" rel="noreferrer"><img src="${esc(mediaUrl(item.path))}" alt="${esc(label)}" loading="lazy"><span>${esc(label)}</span></a>`; }).join("")}</div>` : `<div class="ins-missing">${frame ? "沒有其他單鏡參考圖" : "此鏡尚無已登錄圖片"}${extraMedia.length ? "；另有未確認媒體" : ""}</div>`}
         ${videoCandidates.length ? `<div class="ins-candidates"><b>影片候選（未確認，不視為正式成片）</b>${videoCandidates.map((item) => `<div class="candidate-video"><video src="${esc(mediaUrl(item.path))}" controls playsinline preload="metadata"></video><span>${esc(item.role === "video_candidate" ? "未確認候選" : item.role || "關聯影片")}${item.shot_ids?.length > 1 ? ` · 分組鏡頭 ${esc(item.shot_ids.join("、"))}` : ""}</span></div>`).join("")}</div>` : ""}
         ${shot.basis?.length ? `<div class="ins-entities"><b>出場設定</b><div class="pills">${shot.basis.map((entry) => `<a class="pill" href="#/${esc(row.id)}/settings/${encodeURIComponent(settingKey(entry.cat, entry.name))}">${esc(entry.name)}</a>`).join("")}</div></div>` : `<div class="ins-missing">未登錄人物、造型、場景或道具設定卡</div>`}
-        <div class="muted small">${clip ? `${clip.cut.still ? `成片靜幀 · ${esc(moveLabel(clip.cut))}` : "成片片段"} · 剪輯單 ${esc(clip.cut.id)}` : frame ? "已繫結首幀；尚無成片片段" : "尚無已繫結首幀或成片片段"}</div>
+        <div class="muted small">${clip ? `${clip.cut.still ? `成片靜幀 · ${esc(moveLabel(clip.cut))}` : "成片片段"} · 剪輯單 ${esc(clip.cut.id)}` : frame ? "已關聯首幀候選；尚無成片片段" : "尚無首幀候選或成片片段"}</div>
       </section>
       <section class="ins-prompts"><h4>提示詞 <span class="muted small">依來源分開顯示</span></h4>
         ${promptItems.length ? promptItems.map((item) => `<article class="ins-prompt"><header><b>${esc(item.label)}</b><span>${esc(item.source)}</span><span class="act">${copyButton(item.text, item.id)}</span></header><button class="prompt clamp" type="button" data-act="expand" aria-label="展開或收合${esc(item.label)}">${esc(item.text)}</button></article>`).join("") : `<div class="ins-missing">尚無此鏡提示詞</div>`}
@@ -1640,10 +1640,10 @@ function keyframeCopyUnits(shots) {
   const units = [];
   for (const shot of shots || []) {
     if (shot.keyframe) {
-      units.push({ key: `kf-${shot.id}`, id: shot.id, title: shot.title, meta: [`${esc(shot.scale || "未寫景別")} · ${num(shot.sec)} 秒`, "首幀"], text: shot.keyframe });
+      units.push({ key: `kf-${shot.id}`, id: shot.id, title: shot.title, meta: [`${esc(shot.scale || "景別未辨識或複合")} · ${num(shot.sec)} 秒`, "首幀"], text: shot.keyframe });
     }
     if (shot.closing_keyframe) {
-      units.push({ key: `ckf-${shot.id}`, id: `${shot.id}-closing`, title: shot.title, meta: [`${esc(shot.scale || "未寫景別")} · ${num(shot.sec)} 秒`, "尾幀"], text: shot.closing_keyframe });
+      units.push({ key: `ckf-${shot.id}`, id: `${shot.id}-closing`, title: shot.title, meta: [`${esc(shot.scale || "景別未辨識或複合")} · ${num(shot.sec)} 秒`, "尾幀"], text: shot.closing_keyframe });
     }
   }
   return units;

@@ -114,8 +114,9 @@ def try_parse_text_prompts(docs, image=False):
                 substantive=[]
                 for row in body.splitlines():
                     clean=re.sub(r'^\s*(?:[-*+]\s+)?','',row).strip()
+                    clean=re.sub(r'\*\*(.*?)\*\*',r'\1',clean)
                     if not clean: continue
-                    if re.match(r'^(?:備註|時長|模式|生成模式|生成方式|鏡號|分鏡|素材|群組|輸入資產|分組依據|狀態|後製|剪輯備註|title|duration|mode|shots|shot_ids)\s*[：:]',clean,re.I): continue
+                    if re.match(r'^(?:備註|設計剪輯時長|時長|模式|生成模式|生成方式|鏡號|分鏡|素材|群組|輸入資產|分組依據|狀態|QA驗收狀態|資產狀態|首幀／關鍵格資產|中文台詞逐字|後製|剪輯備註|title|duration|mode|shots|shot_ids)\s*[：:]',clean,re.I): continue
                     substantive.append(row)
                 raw='\n'.join(substantive).strip()
                 # A heading plus production metadata is not a copyable request.
@@ -137,8 +138,11 @@ def try_parse_text_prompts(docs, image=False):
                         if isinstance(members,list): ids.extend(str(x) for x in members if re.fullmatch(r'S\d+[A-Z]?',str(x)))
                     except (ValueError,TypeError): pass
             ids=list(dict.fromkeys(ids))
-            sec_match=re.search(r'(?im)^(?:時長|duration)\s*[：:]\s*(\d+(?:\.\d+)?)\s*(?:秒|s)?\s*$',body) or re.search(r'(\d+(?:\.\d+)?)\s*秒',title)
-            mode_match=re.search(r'(?im)^(?:模式|生成方式|生成模式|mode)\s*[：:]\s*(.+)$',body) or re.search(r'\b(T2VA|I2VA|FL2VA|L2VA|Ref2VA)\b',title)
+            meta_body=re.sub(r'```[^\n]*\n.*?```', '', body, flags=re.S)
+            meta_body=re.sub(r'(?m)^\s*[-*+]\s+', '', meta_body)
+            meta_body=re.sub(r'\*\*(.*?)\*\*', r'\1', meta_body)
+            sec_match=re.search(r'(?im)^(?:設計剪輯時長|時長|duration)\s*[：:]\s*(\d+(?:\.\d+)?)\s*(?:秒|s)?\s*$',meta_body) or re.search(r'(\d+(?:\.\d+)?)\s*秒',title)
+            mode_match=re.search(r'(?im)^(?:模式|生成方式|生成模式|mode)\s*[：:]\s*(.+)$',meta_body) or re.search(r'\b(T2VA|I2VA|FL2VA|L2VA|Ref2VA)\b',title)
             n=int(re.search(r'\d+',ids[0]).group()) if ids else 0
             mode=mode_match.group(1).strip() if mode_match else ''
             if mode_match and mode_match.lastindex is None: mode=mode_match.group(1)

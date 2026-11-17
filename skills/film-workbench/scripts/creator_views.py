@@ -98,7 +98,8 @@ def map_shot(row):
     camera = str(fields.get('攝影機描述', ''))
     scale_map = {'大特寫':'大特写','大特写':'大特写','中近景':'中近景','遠景':'远景','远景':'远景','全景':'全景','中景':'中景','近景':'近景','特寫':'特写','特写':'特写','細節':'细节','细节':'细节'}
     scale_re = re.compile('|'.join(re.escape(k) for k in sorted(scale_map, key=len, reverse=True)))
-    found = {scale_map[m.group(0)] for m in scale_re.finditer(camera)}
+    camera_for_scale = re.sub(r'(?:細節|细节)(?:特寫|特写)', '特寫', camera)
+    found = {scale_map[m.group(0)] for m in scale_re.finditer(camera_for_scale)}
     scale = next(iter(found)) if len(found) == 1 else ''
     supplement = row.get('supplement') or {}
     media = [m for m in supplement.get('media', []) if not m.get('shot_ids') or shot_id in m.get('shot_ids', [])]

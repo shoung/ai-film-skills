@@ -139,6 +139,8 @@ def _tables(text):
                 issues.append('分鏡資料第 ' + str(row_index) + ' 列欄數與欄名不符')
                 continue
             shot_id = row[0].strip()
+            bold = re.fullmatch(r'(\*\*|__)(.+?)\1', shot_id)
+            if bold: shot_id = bold.group(2).strip()
             if shot_id.lower() in ('合計', '總計', '小計', 'total', 'subtotal', '總秒數', '總長度'):
                 continue
             if not shot_id:
@@ -247,6 +249,9 @@ def project_snapshot(root):
                                 packages.append((path, obj, entry))
                 files.append(entry)
             elif ext[1:] in MEDIA:
+                # Tutorial captures are documentation, not film footage candidates.
+                if any(part in {'教學素材', '教学素材', 'tutorial-assets'} for part in Path(rel).parts[:-1]):
+                    continue
                 media.append(rel)
                 kind = 'grid' if ('grid' in name.lower() or 'storyboard' in name.lower() or '宮格' in name) and ext == '.png' else 'media'
                 files.append({'path': rel, 'name': name, 'kind': kind, 'episode': _episode(rel)})
@@ -329,7 +334,7 @@ def project_snapshot(root):
                 candidate = next((s for s in per_source.get(source, [])), None)
                 if not candidate: continue
                 raw_diffs = [field for field in COLUMNS if candidate['fields'].get(field) != preferred['fields'].get(field)]
-                diffs = [field for field in COLUMNS if _comparison_value(candidate['fields'].get(field)) != _comparison_value(preferred['fields'].get(field))]
+                diffs = [field for field in COLUMNS if field != '編號' and _comparison_value(candidate['fields'].get(field)) != _comparison_value(preferred['fields'].get(field))]
                 record = {'path': source, 'fields': dict(candidate['fields']), 'notes': list(candidate.get('supplement', {}).get('notes', [])),
                           'differences': raw_diffs, 'substantive_differences': diffs}
                 sources.append(record)

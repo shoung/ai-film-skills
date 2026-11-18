@@ -4,11 +4,13 @@
 
 ---
 
-## 模式一：單一鏡頭 6 秒拿杯動作（Base T2VA 獨立請求）
+## 模式一：單一鏡頭 6 秒拿杯動作（I2VA 首幀驅動）
 
-備註：群組 G001（分鏡 S001）｜模式 T2VA｜時長 6.00 秒｜假設輸入：無｜分組依據：偏好單一連續事件完整呈現。
+備註：群組 G001（分鏡 S001）｜模式 I2VA｜時長 6.00 秒｜假設輸入：<Picture 1>（男子坐在桌前的首幀）｜模式依據：無台詞，首幀足以帶出動作。
 
 ```text
+For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.
+
 integrated_multimodal_description: [Shot 1] 真實電影質感，平視中近景。晨光照耀的木桌前，一名男子安靜坐著。男子伸手端起桌上的白色陶瓷水杯喝水，隨後平穩放回桌面並收回右手。固定機位。
 
 overall_soundscape: 水杯接觸木桌的清脆碰撞聲與安靜室內底噪。
@@ -18,21 +20,39 @@ non_diegetic_music: N/A
 
 ---
 
-## 模式二：單一請求 8 秒兩鏡自然連接（Base T2VA 開空櫃與對白）
+## 模式二：單一請求 8 秒兩鏡自然連接（Ref2VA 開空櫃與對白）
 
-備註：群組 G002（分鏡 S002、S003）｜模式 T2VA｜時長 8.00 秒｜假設輸入：無｜分組依據：開櫃與困惑發話為連續因果事件，合併為單一請求以維持連貫。
+備註：群組 G002（分鏡 S002、S003）｜模式 Ref2VA｜時長 8.00 秒｜假設輸入：<Picture 1>（曉明外觀）、<Audio 1>（曉明聲線樣本）｜S003 有台詞，兩鏡合併保留動作與反應。
 
 ```text
-integrated_multimodal_description: [Shot 1] 真實電影質感，平視中景。廚房內一名女子站在高處木質櫥櫃前，伸手拉開櫃門，展現空無一物的內部層架。固定機位。[Shot 2] At 00:04.000, 切至女子正面近景，鏡頭緩慢微推。女子注視空置層架，帶著困惑語氣 (S1) 說道：<d>[Chinese] 沒有了？</d> 說完後維持凝視。
+subject_definitions:
+<Subject 1>：<Picture 1> 中的曉明。
+<Audio 1>：<Subject 1> (S1) 曉明的聲線參考，音色偏低、語速平穩。
 
-overall_soundscape: 木櫃門開啟的摩擦聲。
+summary:
+[reference generation + audio reference] 在廚房連續呈現曉明開櫃及發現櫃子是空的反應，參考 <Audio 1> 演出原台詞。
 
-non_diegetic_music: N/A
+retention_analysis:
+<Subject 1>: fully_preserved - 保留曉明的外貌與服裝。
+<Audio 1>: reference - 取用音色與語速作參考，生成劇本指定台詞。
+
+detailed_description:
+真實電影質感，廚房自然光。
+[Shot 1] 平視中景。<Subject 1> 站在關閉的懸掛木櫃前，伸手開門，露出空層架。
+[Shot 2] At 00:04.000, 切至正面近景並微推。<Subject 1> (S1) 注視空層架，使用 <Audio 1> 的聲線困惑地問：<d>[Chinese] 沒有了？</d>
+
+overall_soundscape:
+木櫃門開啟的摩擦聲與室內底噪。
+
+non_diegetic_music:
+N/A
 ```
 
 ---
 
 ## 模式三：跨請求獨立承接（Ref2VA 拿盒與放盒）
+
+本例假設無法取得符合兩段起始構圖、人物姿勢及道具擺位的首幀，也無法建立連續首尾幀。兩段各用手上的角色與道具素材作 Ref2VA。
 
 ### 請求 A：拿起木盒
 

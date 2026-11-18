@@ -23,6 +23,12 @@ Codex 負責編排、格式檢驗與結構驗證，不得改寫正文。僅在�
 
 使用者要求建立、改寫或轉換分鏡表時，讀取本地 [八欄分鏡表格式](references/storyboard-table-format.md) 與 [分鏡表模板](references/storyboard-table-template.md)，固定八欄與欄序，每列一個連續鏡頭；生成群組可在旁表中對應多列。純分鏡表任務在此分支完成，不啟動 H3 模型提示詞改寫或生成需求；純提示詞任務不自動附加分鏡表。
 
+## 生成模式選擇與聲線參考
+
+逐鏡查看分鏡表的對白與聲音欄，再依 [模式選擇規則](../film-quality-control/references/mode-and-shot-rules.md#生成模式選擇) 分組。**有角色說話或台詞的鏡頭一律用 Ref2VA**，包括畫外台詞和旁白。有可用首幀、缺聲音檔或一鏡只有一句台詞，仍選 Ref2VA。無台詞的鏡頭優先用 I2VA（首幀足以控制）或 FL2VA（需固定尾態且首尾幀可連續銜接）；兩者皆無法滿足鏡頭需求時，才改用 Ref2VA。
+
+有說話者的 Ref2VA 提示詞在最前面的 `subject_definitions` 逐人描述聲線。有指定音檔時在同一區塊綁定對應的 `<Audio N>`，例如 `<Audio 1>：<Subject 5> (S1) 曉明的聲線參考。` 在發話處引用同一聲音檔並保留原台詞。已指定但尚未上傳的音檔，先寫好開頭的對應並於提示詞外標記待上傳。提交前依介面掛載並核對標籤。完整格式見 [Ref2VA 指南](references/ref-en.txt) 與 [對白範例](references/format-example.md)。
+
 ## 請求自足性與起始狀態
 
 參考圖順序、用途、控制／不得控制範圍與掛圖計畫依 [參考圖控制規範](../film-quality-control/references/reference-control.md)。實際 `image_inputs` 只登錄已核對素材；計畫圖不當作已提交圖片，H3 欄位與模型標籤維持原規範。複雜場面與修鏡可參考 [分鏡方法庫](../video-prompts/references/storyboard-methods.md)；若單獨安裝缺少共享參考，明示限制並沿用本技能既有規則，不假稱已執行相關檢查。

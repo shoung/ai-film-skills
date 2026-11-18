@@ -66,19 +66,20 @@
   --zs-voice: #2b5a8a;
   --zs-voice-wash: rgba(80, 140, 200, 0.15);
 
-  /* an ordinal ramp: one hue, first step to last = light to dark */
-  --zs-ramp-1: #8faacb;
-  --zs-ramp-2: #7797c0;
-  --zs-ramp-3: #557cab;
-  --zs-ramp-4: #36648f;
-  --zs-ramp-5: #214b74;
-  --zs-ramp-6: #13304e;
+  /* shot scales: blue-grey, sage, sand, rose, lavender, terracotta;
+     same muted hues in both themes, with dark ink for legible shot numbers */
+  --zs-ramp-1: #8faec2;
+  --zs-ramp-2: #95b3a4;
+  --zs-ramp-3: #c8b782;
+  --zs-ramp-4: #c29da9;
+  --zs-ramp-5: #aaa1c2;
+  --zs-ramp-6: #c4a086;
   --zs-ramp-ink-1: #081431;
   --zs-ramp-ink-2: #081431;
-  --zs-ramp-ink-3: #ffffff;
-  --zs-ramp-ink-4: #ffffff;
-  --zs-ramp-ink-5: #ffffff;
-  --zs-ramp-ink-6: #ffffff;
+  --zs-ramp-ink-3: #081431;
+  --zs-ramp-ink-4: #081431;
+  --zs-ramp-ink-5: #081431;
+  --zs-ramp-ink-6: #081431;
 
   /* on-screen panels and media frames stay dark in both themes */
   --zs-panel: #0b1633;
@@ -195,15 +196,15 @@
     --zs-on-danger: #081431;
     --zs-voice: #8fb6e0;
     --zs-voice-wash: rgba(80, 140, 200, 0.2);
-    --zs-ramp-1: #35557a;
-    --zs-ramp-2: #40689b;
-    --zs-ramp-3: #5580b4;
-    --zs-ramp-4: #76a0d0;
-    --zs-ramp-5: #a0bfe3;
-    --zs-ramp-6: #d0e1f4;
-    --zs-ramp-ink-1: #ffffff;
-    --zs-ramp-ink-2: #ffffff;
-    --zs-ramp-ink-3: #ffffff;
+    --zs-ramp-1: #8faec2;
+    --zs-ramp-2: #95b3a4;
+    --zs-ramp-3: #c8b782;
+    --zs-ramp-4: #c29da9;
+    --zs-ramp-5: #aaa1c2;
+    --zs-ramp-6: #c4a086;
+    --zs-ramp-ink-1: #081431;
+    --zs-ramp-ink-2: #081431;
+    --zs-ramp-ink-3: #081431;
     --zs-ramp-ink-4: #081431;
     --zs-ramp-ink-5: #081431;
     --zs-ramp-ink-6: #081431;
@@ -249,15 +250,15 @@
   --zs-on-danger: #081431;
   --zs-voice: #8fb6e0;
   --zs-voice-wash: rgba(80, 140, 200, 0.2);
-  --zs-ramp-1: #35557a;
-  --zs-ramp-2: #40689b;
-  --zs-ramp-3: #5580b4;
-  --zs-ramp-4: #76a0d0;
-  --zs-ramp-5: #a0bfe3;
-  --zs-ramp-6: #d0e1f4;
-  --zs-ramp-ink-1: #ffffff;
-  --zs-ramp-ink-2: #ffffff;
-  --zs-ramp-ink-3: #ffffff;
+  --zs-ramp-1: #8faec2;
+  --zs-ramp-2: #95b3a4;
+  --zs-ramp-3: #c8b782;
+  --zs-ramp-4: #c29da9;
+  --zs-ramp-5: #aaa1c2;
+  --zs-ramp-6: #c4a086;
+  --zs-ramp-ink-1: #081431;
+  --zs-ramp-ink-2: #081431;
+  --zs-ramp-ink-3: #081431;
   --zs-ramp-ink-4: #081431;
   --zs-ramp-ink-5: #081431;
   --zs-ramp-ink-6: #081431;

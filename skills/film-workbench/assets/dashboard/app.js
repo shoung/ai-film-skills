@@ -816,6 +816,9 @@ function renderDocument(path, content) {
 const IC = {
   search: '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>',
   left: '<path d="m14.5 6-6 6 6 6"/>', right: '<path d="m9.5 6 6 6-6 6"/>', down: '<path d="m6 9.5 6 6 6-6"/>',
+  arrowUp: '<path d="M12 19V5m-6 6 6-6 6 6"/>',
+  arrowDown: '<path d="M12 5v14m-6-6 6 6 6-6"/>',
+  trash: '<path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/>',
   close: '<path d="M6 6l12 12M18 6 6 18"/>', check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
   copy: '<rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/>',
   edit: '<path d="M4.5 19.5h4l10-10a2.1 2.1 0 0 0-4-4l-10 10v4Z"/><path d="m13.5 6.5 4 4"/>',
@@ -1488,8 +1491,11 @@ function renderBoardDraft(edit) {
   host.innerHTML = edit.tables.map((table, t) => {
     const groups = table.groups.map((group, g) => {
       const rows = group.rows.map((row, r) => {
-        const button = (action, label, disabled = false) => `<button class="btn sm" type="button" data-act="board-${action}" ${disabled ? "disabled" : ""}>${label}</button>`;
-        const controls = `<div class="board-row-actions">${button("up", "上移", r === 0)}${button("down", "下移", r === group.rows.length - 1)}${button("delete", "刪除")}</div>`;
+        const button = (action, label, iconName, disabled = false) => {
+          const name = esc(`${label} ${row.cells[0] || `第 ${r + 1} 列`}`);
+          return `<button class="icon-btn" type="button" data-act="board-${action}" aria-label="${name}" title="${name}" ${disabled ? "disabled" : ""}>${icon(iconName)}</button>`;
+        };
+        const controls = `<div class="board-row-actions">${button("up", "上移", "arrowUp", r === 0)}${button("down", "下移", "arrowDown", r === group.rows.length - 1)}${button("delete", "刪除", "trash")}</div>`;
         const cells = row.cells.map((cell, c) => `<td>${c === 0 && row.key !== null ? `<b>${esc(cell)}</b>` :
           `<textarea data-cell="${c}" rows="${c === 0 ? 1 : 2}" aria-label="${esc(`${row.cells[0] || `第 ${r + 1} 列`} · ${SHOT_COLUMNS[c]}`)}">\n${esc(cell)}</textarea>`}${c === 0 ? controls + (row.note ? `<details><summary>修改附註</summary>${fieldHTML(row.note)}</details>` : "") : ""}</td>`).join("");
         return `<tr data-row="${r}">${cells}</tr>`;

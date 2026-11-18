@@ -481,7 +481,8 @@ a.shotref:hover { color: var(--zs-signal-ink); border-color: var(--zs-signal); }
   padding: var(--zs-space-1); border: 1px solid var(--zs-line); border-radius: var(--zs-radius-xs);
   background: var(--zs-surface); line-height: 1.5; overflow-wrap: anywhere;
 }
-.board-row-actions { display: flex; gap: var(--zs-space-1); flex-wrap: wrap; margin-top: var(--zs-space-1); }
+.board-row-actions { display: flex; gap: var(--zs-space-1); margin-top: var(--zs-space-1); }
+.board-row-actions .icon-btn { width: 28px; height: 28px; border-radius: var(--zs-radius-sm); }
 .board-summary td { white-space: pre-wrap; color: var(--zs-ink-500); }
 #boardDraft { display: grid; gap: var(--zs-space-3); margin-top: var(--zs-space-2); }
 #boardDraft h3 { padding: var(--zs-space-2) var(--zs-space-2h); }

@@ -26,6 +26,9 @@ python scripts/dashboard_server.py "D:/你的專案" --port 0 --detach --open
 
 ## 編輯與 QA
 
+在分鏡頁按「編輯表格」，即可在八欄表格內直接編輯、加列、刪列與上下移動，既有鏡號維持不變且新增列可填寫鏡號。
+多個 Markdown 來源時可先選檔，儲存時僅更新該檔分鏡列並保留表外說明與小計，遇 CSV、原版逐鏡標題格式及無法辨識的表格亦可使用原文編輯。
+
 從各階段「編輯原文」進入文件編輯。保存只寫原文，不執行生成、渲染或批准審查。外部修改造成的版本衝突返回 409，需重新讀取後合併。QA JSON 保持唯讀，修改創作資料後依 `film-quality-control` 重新審核。
 
 來源及 MIT 授權見 `LICENSE.upstream` 與 `assets/dashboard/NOTICE.txt`。本次功能等價與操作證據見套件 `docs/reviews/2026-11-16-workbench-parity.md`，該紀錄中待驗項不能解讀為已完成。

@@ -11,6 +11,8 @@ import threading
 from pathlib import Path, PurePosixPath
 
 COLUMNS = ['編號', '畫面描述', '攝影機描述', '聲音描述', '旁白對白', '時長', '影片生成方式', '畫面prompt']
+SUMMARY_IDS = {'合計', '總計', '小計', 'total', 'subtotal', '總秒數', '總長度'}
+TABLE_RULE = re.compile(r'\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*')
 SKIP = {'.git', '.svn', '.hg', '.agents', '.codex', '_work', 'node_modules', '__pycache__', '.venv', 'venv', '.idea', '.vscode'}
 TEXT = {'.md', '.markdown', '.csv', '.txt'}
 READ_ONLY_TEXT = {'.html', '.htm'}
@@ -81,22 +83,18 @@ def _unpipe(line):
     value = line.strip()
     if value.startswith('|'):
         value = value[1:]
-    if value.endswith('|') and not value.endswith('\\|'):
-        value = value[:-1]
-    cells, cell, i = [], [], 0
-    while i < len(value):
-        char = value[i]
-        if char == '\\' and i + 1 < len(value) and value[i + 1] == '|':
+    cells, cell, start = [], [], 0
+    for match in re.finditer(r'(\\*)\|', value):
+        backslashes = len(match[1])
+        cell.append(value[start:match.start()] + '\\' * (backslashes // 2))
+        start = match.end()
+        if backslashes % 2:
             cell.append('|')
-            i += 2
-            continue
-        if char == '|':
+        else:
             cells.append(''.join(cell).strip())
             cell = []
-        else:
-            cell.append(char)
-        i += 1
-    cells.append(''.join(cell).strip())
+    if cell or start != len(value) or not cells:
+        cells.append((''.join(cell) + value[start:]).strip())
     return cells
 
 
@@ -109,39 +107,67 @@ def _blank_shot(shot_id, source, row_index, fields):
             'assets': [], 'generations': [], 'reviews': [], 'issues': []}
 
 
-def _tables(text):
-    lines = text.splitlines()
-    shots, issues, columns = [], [], None
-    table_count = 0
+def _shot_id(cell):
+    bold = re.fullmatch(r'(\*\*|__)(.+?)\1', cell)
+    return bold.group(2).strip() if bold else cell.strip()
+
+
+def _markdown_tables(lines):
+    """Yield table spans outside fenced examples and HTML comments."""
+    fence = None
+    in_comment = False
+    visible = []
+    for line in lines:
+        marker = re.match(r'^ {0,3}(`{3,}|~{3,})([^\r\n]*)', line)
+        if fence:
+            if marker and marker[1][0] == fence[0] and len(marker[1]) >= len(fence) and not marker[2].strip():
+                fence = None
+            visible.append('')
+        elif not in_comment and marker:
+            fence = marker[1]
+            visible.append('')
+        else:
+            was_in_comment = in_comment
+            for token in re.findall(r'<!--|-->', line):
+                in_comment = token == '<!--' if not in_comment else token != '-->'
+            # Inline closed comments can be part of a cell. Multi-line comments
+            # form a boundary so a table never consumes the surrounding prose.
+            visible.append('' if was_in_comment or in_comment or line.lstrip().startswith('<!--') else line)
     i = 0
     while i + 1 < len(lines):
-        if '|' not in lines[i] or not re.fullmatch(r'\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*', lines[i + 1]):
+        if '|' not in visible[i] or not TABLE_RULE.fullmatch(visible[i + 1]):
             i += 1
             continue
         header = _unpipe(lines[i])
         separators = _unpipe(lines[i + 1])
         i += 2
+        start = i
+        while i < len(lines) and '|' in visible[i]:
+            if i + 1 < len(lines) and TABLE_RULE.fullmatch(visible[i + 1]):
+                break
+            i += 1
+        yield start, i, header, separators
+
+
+def _tables(text):
+    lines = re.split(r'\r\n|\n|\r', text)
+    shots, issues, columns = [], [], None
+    table_count = 0
+    for start, end, header, separators in _markdown_tables(lines):
         legacy = len(header) == 9 and header[0] == COLUMNS[0] and header[2:] == COLUMNS[1:]
         if len(header) in (8, 9) and len(separators) == len(header) and not (_is_header(header) or legacy):
             issues.append('發現非本規格八欄欄名或欄序的表格，已略過')
         if not (_is_header(header) or legacy) or len(separators) != len(header):
-            while i < len(lines) and '|' in lines[i]:
-                i += 1
             continue
         columns = columns or header
         table_count += 1
-        row_index = 0
-        while i < len(lines) and '|' in lines[i]:
-            row = _unpipe(lines[i])
-            i += 1
-            row_index += 1
+        for row_index, line in enumerate(lines[start:end], 1):
+            row = _unpipe(line)
             if len(row) != len(header):
                 issues.append('分鏡資料第 ' + str(row_index) + ' 列欄數與欄名不符')
                 continue
-            shot_id = row[0].strip()
-            bold = re.fullmatch(r'(\*\*|__)(.+?)\1', shot_id)
-            if bold: shot_id = bold.group(2).strip()
-            if shot_id.lower() in ('合計', '總計', '小計', 'total', 'subtotal', '總秒數', '總長度'):
+            shot_id = _shot_id(row[0])
+            if shot_id.lower() in SUMMARY_IDS:
                 continue
             if not shot_id:
                 issues.append('分鏡資料第 ' + str(row_index) + ' 列缺少鏡號')
@@ -170,7 +196,7 @@ def _csv(path):
             issues.append('CSV 第 ' + str(index) + ' 列欄數與欄名不符')
             continue
         shot_id = row[0].strip()
-        if shot_id.lower() in ('合計', '總計', '小計', 'total', 'subtotal', '總秒數', '總長度'):
+        if shot_id.lower() in SUMMARY_IDS:
             continue
         if not shot_id:
             issues.append('CSV 第 ' + str(index) + ' 列缺少鏡號')
@@ -200,11 +226,11 @@ def project_snapshot(root):
         if depth >= MAX_DEPTH:
             dirs[:] = []
         else:
-            dirs[:] = [d for d in dirs if not d.startswith('.') and d not in SKIP
+            dirs[:] = [d for d in sorted(dirs) if not d.startswith('.') and d not in SKIP
                        and 'ai-film-skills' not in d.lower()
                        and not (Path(base) / d).is_symlink()
                        and not (Path(base) / d / 'SKILL.md').exists()]
-        for name in names:
+        for name in sorted(names):
             path = Path(base) / name
             if name.startswith('.') or path.is_symlink():
                 continue
@@ -279,13 +305,15 @@ def project_snapshot(root):
             continue
         ep = ensure_episode(entry['episode'] or 'project')
         ep['issues'].extend(parse_issues)
+        if columns:
+            ep.setdefault('storyboard_sources', []).append(entry['path'])
         for shot in shots:
             shot['source'] = entry['path']
             shot['_columns'] = columns
             ep['shots'].append(shot)
     # Resolve same-episode exports as source copies; keep canonical fields from authority.
     for ep in episodes.values():
-        docs_here = list(dict.fromkeys(s['source'] for s in ep['shots']))
+        docs_here = ep.get('storyboard_sources', [])
         explicit = sorted(master_paths.intersection(docs_here))
         markdown = sorted(p for p in docs_here if Path(p).suffix.lower() in {'.md', '.markdown'})
         master_conflict = len(explicit) > 1
@@ -481,7 +509,7 @@ def _file_lock(path):
         return _LOCKS.setdefault(key, threading.Lock())
 
 
-def read_document(root, relative_path, content=None, expected_version=None):
+def read_document(root, relative_path, content=None, expected_version=None, *, preserve_bom=False):
     path = _safe(root, relative_path)
     if path.suffix.lower() not in TEXT | READ_ONLY_TEXT | {'.json'}:
         raise PermissionError('此檔案不可透過文字 API 讀取或編輯')
@@ -504,11 +532,14 @@ def read_document(root, relative_path, content=None, expected_version=None):
         raise PermissionError('此文件為唯讀來源')
     if not isinstance(content, str) or not isinstance(expected_version, str):
         raise ValueError('保存內容或版本格式不正確')
-    data = content.encode('utf-8')
     with _file_lock(path):
         current = path.read_bytes()
         if _version(current) != expected_version:
             raise ValueError('文件已變更，請重新載入後再保存')
+        encoding = 'utf-8-sig' if preserve_bom and current.startswith(b'\xef\xbb\xbf') else 'utf-8'
+        data = content.encode(encoding)
+        if len(data) > MAX_FILE:
+            raise ValueError('文件超過讀取上限')
         fd, temporary = tempfile.mkstemp(prefix='.film-workbench-', dir=str(path.parent))
         try:
             with os.fdopen(fd, 'wb') as handle:

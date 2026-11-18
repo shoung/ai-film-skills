@@ -21,10 +21,12 @@ try:
     from . import project_reader
     from . import creator_views
     from . import project_documents
+    from . import storyboard_editor
 except ImportError:
     import project_reader
     import creator_views
     import project_documents
+    import storyboard_editor
 
 RUNTIME = Path(os.environ.get('LOCALAPPDATA') or tempfile.gettempdir()) / 'film-workbench'
 STATIC_ROOT = Path(__file__).resolve().parents[1] / 'assets' / 'dashboard'
@@ -160,7 +162,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _episode_ids(self, root=None):
         episodes=self._snapshot(root).get('episodes',[])
-        return [str(ep['id']) for ep in episodes if str(ep['id'])!='project' or bool(ep.get('shots'))]
+        return [str(ep['id']) for ep in episodes if str(ep['id'])!='project' or ep.get('shots') or ep.get('storyboard_sources')]
 
     def _episode(self, episode_id, root=None):
         root=Path(root or self.server.root)
@@ -426,6 +428,8 @@ class Handler(BaseHTTPRequestHandler):
                 result['expectedVersion']=result.get('version')
                 result['writable']=result['editable']
                 return self._json(200,result)
+            if parsed.path == '/api/storyboard-table':
+                return self._json(200, storyboard_editor.document(selected, query.get('path', [''])[0]))
             return self._err(404, '找不到端點')
         except PermissionError as exc:
             return self._err(403, str(exc))
@@ -457,7 +461,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_PUT(self):
         if not self._authorized():
             return self._err(403, '工作階段驗證失敗')
-        if urllib.parse.urlsplit(self.path).path != '/api/file':
+        url = urllib.parse.urlsplit(self.path)
+        if url.path not in {'/api/file', '/api/storyboard-table'}:
             return self._err(404, '找不到端點')
         try:
             length = int(self.headers.get('Content-Length', '0'))
@@ -482,7 +487,7 @@ class Handler(BaseHTTPRequestHandler):
             if not isinstance(body, dict):
                 return self._err(400, 'JSON 內容必須是物件')
             expected=body.get('expected_version',body.get('expectedVersion'))
-            query=urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            query=urllib.parse.parse_qs(url.query)
             query_path=query.get('path',[None])[0]
             query_project=query.get('project',[None])[0]
             for key, value in (('path',query_path),('project',query_project)):
@@ -490,6 +495,12 @@ class Handler(BaseHTTPRequestHandler):
                     return self._err(400, '保存目標與網址不一致')
             target_path=body.get('path',query_path)
             target_project=body.get('project',query_project)
+            if url.path == '/api/storyboard-table':
+                if not all(isinstance(value, str) for value in (target_path, expected)) or not isinstance(body.get('tables'), list):
+                    return self._err(400, '缺少分鏡檔路徑、版本或表格')
+                result = storyboard_editor.document(self._project_root(target_project), target_path,
+                    draft=body['tables'], expected_version=expected)
+                return self._json(200, result)
             if not all(isinstance(value, str) for value in (target_path,body.get('content'),expected)):
                 return self._err(400, 'path、content、expectedVersion 必須都是字串')
             root=self._project_root(target_project)

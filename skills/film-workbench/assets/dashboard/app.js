@@ -4,9 +4,9 @@
  *
  * The server parses every document (GET /api/series, /api/episode,
  * /api/search); this file only lays the structures out. Markdown is the one
- * source of truth: structured views are read-only, 編輯原文 opens the raw
- * Markdown, and a save goes through PUT /api/file with the version it was
- * opened at. Nothing here generates, renders or submits production; actions
+ * source of truth: storyboard rows can be edited in their table, and
+ * 編輯原文 opens the raw text. Both save against the version opened.
+ * Nothing here generates, renders or submits production; actions
  * become a sentence copied for the assistant.
  *
  * Every piece of project text is escaped before it reaches innerHTML, and
@@ -947,10 +947,12 @@ async function loadEpisode(ep) {
 }
 
 async function refreshProject() {
+  const project = S.project;
   const [series, tree] = await Promise.all([
-    api(`/api/series?${query({ project: S.project })}`),
-    api(`/api/tree?${query({ project: S.project })}`),
+    api(`/api/series?${query({ project })}`),
+    api(`/api/tree?${query({ project })}`),
   ]);
+  if (S.project !== project) return;
   S.series = series;
   S.tree = tree;
   S.files = flatten(tree.tree);
@@ -1406,7 +1408,9 @@ function blockingHTML(blocks) {
 }
 
 function viewBoard(row, E, arg, q) {
-  if (!row.has.board) return missingView(row, "board");
+  const editTable = boardTableButton(row, E);
+  if (!row.has.board && !editTable) return missingView(row, "board");
+  if (!E.board && editTable) return `<div class="wrap"><div class="head"><h2>分鏡</h2><div class="actions">${editTable}${editButton(E.docs["分鏡.md"])}</div></div>${problemNotices(E)}<p>分鏡表目前沒有鏡頭。</p></div>`;
   if (!E.board) return rawFallback(E, E.docs["分鏡.md"], "分鏡");
   const C = context(E);
   const sceneFilter = q.get("scene") || null;
@@ -1419,20 +1423,22 @@ function viewBoard(row, E, arg, q) {
   const P = C.profile;
   const metric = (label, value, rule, ok) => `<div class="card gauge"><div class="k"><span>${label}</span>${ok === null ? "" : statusMark(ok, ["符合", "留意"])}</div><div class="v">${value}</div><div class="rule">${esc(rule)}</div></div>`;
   const qs = location.hash.includes("?") ? `?${location.hash.split("?")[1]}` : "";
+  const fromAlternative = (shot) => E.sourceResolution?.primary && shot.source && shot.source !== E.sourceResolution.primary;
+  const alternativeLabel = (shot) => fromAlternative(shot) ? `<span class="tag plain" title="${esc(shot.source)}">對照來源</span>` : "";
   const cards = list.map((shot) => { const found = findingsFor(C, shot.id);
     return `<article class="card shot ${arg === shot.id ? "sel" : ""}" data-shot="${esc(shot.id)}" id="c-${esc(shot.id)}" tabindex="0" aria-label="${esc(`${shot.n} ${shot.title}`)}">
       ${thumb(C, shot)}
-      <div><div class="hd"><span class="no">${esc(shot.n)}</span><span class="tt">${esc(shot.title)}</span></div>
+      <div><div class="hd"><span class="no">${esc(shot.n)}</span><span class="tt">${esc(shot.title)}</span>${alternativeLabel(shot)}</div>
         <div class="pills"><span class="pill">${esc(displayLabel(shot.scale) || "景別未辨識或複合")}</span>${shot.moveKind ? `<span class="pill">${fieldHTML(shot.moveKind)}</span>` : ""}<span class="pill">${esc(num(shot.sec))} 秒</span></div>
         <div class="chain"><div><b>起</b><span>${fieldHTML(shot.start)}</span></div><div><b>動</b><span>${fieldHTML(shot.action)}</span></div><div><b>終</b><span>${fieldHTML(shot.end)}</span></div></div>
         <div class="sndrow">${soundFlags(C, shot)}</div></div>
       ${found.length ? `<span class="rev"><span class="revdot ${found[0].sev === "must" ? "" : found[0].sev}">${icon("alert")}${found.length}</span></span>` : ""}
     </article>`; }).join("");
-  const rows = list.map((shot) => `<tr data-shot="${esc(shot.id)}" class="${arg === shot.id ? "sel" : ""}">${SHOT_COLUMNS.map((column) => `<td>${fieldHTML(shot.fields?.[column])}</td>`).join("")}</tr>`).join("");
+  const rows = list.map((shot) => `<tr data-shot="${esc(shot.id)}" class="${arg === shot.id ? "sel" : ""}">${SHOT_COLUMNS.map((column, index) => `<td>${fieldHTML(shot.fields?.[column])}${index === 0 ? alternativeLabel(shot) : ""}</td>`).join("")}</tr>`).join("");
   return `<div class="wrap" data-view="board">
   <div class="head"><div><h2>分鏡</h2><div class="sub">${C.shots.length} 鏡 · ${num(C.total)} 秒${C.scenes.length ? ` · ${C.scenes.length} 場` : ""}</div></div>
     <div class="actions"><div class="seg" role="group" aria-label="佈局"><button type="button" data-layout="cards" aria-pressed="${S.layout === "cards"}">${icon("grid")} 卡片</button><button type="button" data-layout="list" aria-pressed="${S.layout === "list"}">${icon("list")} 列表</button></div>
-    ${editButton(E.docs["分鏡.md"])}</div></div>
+    ${editTable}${editButton(E.docs["分鏡.md"])}</div></div>
   ${problemNotices(E)}
   ${E.board.note ? `<p class="muted small" id="boardNote">${esc(E.board.note)}</p>` : ""}
   ${blockingHTML((E.board.blocking || []).filter((block) => !sceneFilter || block.scene === sceneFilter))}
@@ -1448,6 +1454,153 @@ function viewBoard(row, E, arg, q) {
     ${list.length ? (S.layout === "cards" ? `<div class="shots">${cards}</div>` : `<div class="card table-card"><table class="shot-table"><thead><tr>${SHOT_COLUMNS.map((column) => `<th>${esc(column)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div>`) : '<div class="empty"><p>沒有符合篩選的鏡頭。</p></div>'}
   <span hidden data-query="${esc(qs)}"></span>
   </div>`;
+}
+
+const boardEditorHref = (ep, path = "") => `#/${ep}/board?${query({ editTable: path })}`;
+const boardSources = (E) => [E.sourceResolution?.primary, ...(E.sourceResolution?.alternatives || [])].filter(Boolean);
+const markdownSource = (path) => /\.(md|markdown)$/i.test(path);
+
+function boardTableButton(row, E) {
+  const sources = boardSources(E);
+  if (!sources.some(markdownSource)) return "";
+  return `<a class="btn primary" href="${esc(boardEditorHref(row.id, sources.length === 1 ? sources[0] : ""))}">${icon("edit")}編輯表格</a>`;
+}
+
+function viewBoardEditor(row, E, path) {
+  const sources = boardSources(E);
+  const isSource = sources.includes(path) && markdownSource(path);
+  const sourceLabel = (source) => source === E.sourceResolution?.primary
+    ? (E.sourceResolution.resolved === false ? "（暫用來源）" : "（主表）") : "（對照來源）";
+  const menu = sources.length > 1 || !isSource ? `<div class="pills" aria-label="分鏡來源">${sources.map((source) => {
+    const name = esc(source + sourceLabel(source));
+    if (source === path) return `<span class="pill on" aria-current="true">${name}</span>`;
+    return markdownSource(source) ? `<a class="pill" href="${esc(boardEditorHref(row.id, source))}">${name}</a>`
+      : `<a class="pill" href="#/file?${esc(query({ path: source }))}" title="查看 CSV 原文">${name} · CSV</a>`;
+  }).join("")}</div>` : "";
+  return `<div class="wrap" data-view="board"><div class="head"><div><h2>分鏡表格</h2><p class="sub">${isSource ? esc(path) : "請選擇要編輯的 Markdown 來源。"}</p></div>
+    <div class="actions"><a class="btn ghost" href="#/${esc(row.id)}/board">返回分鏡</a>${isSource ? `${editButton(path)}
+    <button class="btn primary" type="button" data-act="save-board" id="saveButton" disabled>儲存 <kbd>⌘S</kbd></button>` : ""}</div></div>
+    ${menu}${problemNotices(E)}${isSource ? `<p class="muted small" id="editState" role="status">正在讀取…</p><div id="editNotice"></div><div id="boardDraft"></div>` : ""}</div>`;
+}
+
+function renderBoardDraft(edit) {
+  const host = $("#boardDraft");
+  host.innerHTML = edit.tables.map((table, t) => {
+    const groups = table.groups.map((group, g) => {
+      const rows = group.rows.map((row, r) => {
+        const button = (action, label, disabled = false) => `<button class="btn sm" type="button" data-act="board-${action}" ${disabled ? "disabled" : ""}>${label}</button>`;
+        const controls = `<div class="board-row-actions">${button("up", "上移", r === 0)}${button("down", "下移", r === group.rows.length - 1)}${button("delete", "刪除")}</div>`;
+        const cells = row.cells.map((cell, c) => `<td>${c === 0 && row.key !== null ? `<b>${esc(cell)}</b>` :
+          `<textarea data-cell="${c}" rows="${c === 0 ? 1 : 2}" aria-label="${esc(`${row.cells[0] || `第 ${r + 1} 列`} · ${SHOT_COLUMNS[c]}`)}">\n${esc(cell)}</textarea>`}${c === 0 ? controls + (row.note ? `<details><summary>修改附註</summary>${fieldHTML(row.note)}</details>` : "") : ""}</td>`).join("");
+        return `<tr data-row="${r}">${cells}</tr>`;
+      }).join("");
+      const summary = group.summary ? `<tr class="board-summary">${group.summary.map((cell) => `<td>${esc(cell)}</td>`).join("")}</tr>` : "";
+      return `<tbody data-table="${t}" data-group="${g}">${rows}<tr><td colspan="8"><button class="btn sm" type="button" data-act="board-add">＋ 新增鏡頭</button></td></tr>${summary}</tbody>`;
+    }).join("");
+    return `<section class="card table-card">${edit.tables.length > 1 ? `<h3>分鏡表 ${t + 1}</h3>` : ""}<table class="shot-table board-edit-table"><thead><tr>${SHOT_COLUMNS.map((column) => `<th scope="col">${esc(column)}</th>`).join("")}</tr></thead>${groups}</table></section>`;
+  }).join("");
+}
+
+function boardDraftPayload(tables) {
+  return tables.map((table) => table.groups.map((group) => group.rows.map(({ key, cells }) => ({ key, cells }))));
+}
+
+function updateBoardDraft(edit) {
+  setDirty(JSON.stringify(boardDraftPayload(edit.tables)) !== edit.original);
+}
+
+async function openBoardEditor(path, sequence) {
+  const host = $("#boardDraft");
+  if (!host) return;
+  const project = S.project;
+  try {
+    if (S.edit?.kind !== "board" || S.edit.path !== path) {
+      const data = await api(`/api/storyboard-table?${query({ project, path })}`);
+      if (sequence !== S.renderSequence || !host.isConnected) return;
+      S.edit = { kind: "board", path, project, version: data.version, tables: data.tables,
+        original: JSON.stringify(boardDraftPayload(data.tables)), writable: true, saving: false, dirty: false };
+    }
+    const edit = S.edit;
+    $("#editState").textContent = "變更將寫回上方所選的檔案。";
+    renderBoardDraft(edit);
+    host.addEventListener("input", (event) => {
+      const field = event.target;
+      if (!field.matches("[data-cell]")) return;
+      const { table, group } = field.closest("tbody").dataset;
+      edit.tables[table].groups[group].rows[field.closest("tr").dataset.row].cells[field.dataset.cell] = field.value;
+      updateBoardDraft(edit);
+    });
+    updateBoardDraft(edit);
+    if (edit.notice) $("#editNotice").innerHTML = edit.notice;
+  } catch (error) {
+    if (sequence !== S.renderSequence || !host.isConnected) return;
+    $("#editState").textContent = "";
+    $("#editNotice").textContent = friendlyFailure(error.message);
+  }
+}
+
+function changeBoardRows(button, action) {
+  const edit = S.edit;
+  if (edit?.kind !== "board" || edit.saving || button.disabled) return;
+  const { table, group } = button.closest("tbody").dataset;
+  const rows = edit.tables[table].groups[group].rows;
+  let index = Number(button.closest("tr").dataset.row);
+  if (action === "board-add") {
+    index = rows.length;
+    rows.push({ key: null, cells: SHOT_COLUMNS.map(() => ""), note: "" });
+  } else if (action === "board-delete") {
+    if (rows[index].key !== null && !confirm(`刪除鏡頭 ${rows[index].cells[0]}？相關素材與提示詞會保留。`)) return;
+    rows.splice(index, 1);
+  } else {
+    const to = index + (action === "board-up" ? -1 : 1);
+    if (to < 0 || to >= rows.length) return;
+    [rows[index], rows[to]] = [rows[to], rows[index]];
+    index = to;
+  }
+  const scroll = button.closest(".table-card").scrollLeft;
+  renderBoardDraft(edit);
+  const tbody = $(`#boardDraft tbody[data-table="${table}"][data-group="${group}"]`);
+  tbody.closest(".table-card").scrollLeft = scroll;
+  const next = tbody.querySelector(`[data-row="${index}"] [data-act="${action}"]:not(:disabled)`) ||
+    tbody.querySelector(`[data-row="${index}"] textarea`) || tbody.querySelector('[data-act="board-add"]');
+  next?.focus({ preventScroll: action !== "board-add" });
+  updateBoardDraft(edit);
+}
+
+async function saveBoard() {
+  const edit = S.edit;
+  if (edit?.kind !== "board" || !edit.dirty || edit.saving || !edit.writable) return;
+  edit.saving = true;
+  const host = $("#boardDraft");
+  $$("textarea", host).forEach((field) => { field.readOnly = true; });
+  setDirty(true);
+  $("#editState").textContent = "正在儲存…";
+  try {
+    const result = await api(`/api/storyboard-table?${query({ project: edit.project, path: edit.path })}`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ expectedVersion: edit.version, tables: boardDraftPayload(edit.tables) }),
+    });
+    if (S.project === edit.project) S.episodes.clear();
+    if (S.edit !== edit) return;
+    Object.assign(edit, { version: result.version, tables: result.tables,
+      original: JSON.stringify(boardDraftPayload(result.tables)), saving: false, notice: "" });
+    renderBoardDraft(edit);
+    setDirty(false);
+    $("#editNotice").innerHTML = "";
+    $("#editState").textContent = "已儲存";
+    try { await refreshProject(); } catch (_error) { toast("分鏡已儲存，專案摘要暫未更新。"); }
+  } catch (error) {
+    if (S.edit !== edit) return;
+    edit.saving = false;
+    const conflict = error.status === 409;
+    edit.writable = !conflict;
+    $$("textarea", host).forEach((field) => { field.readOnly = false; });
+    setDirty(true);
+    $("#editState").textContent = "尚未儲存";
+    edit.notice = `<div class="notice danger" role="alert"><span>${esc(conflict ? "來源檔已在別處修改。可先複製草稿，再載入最新版本。" : friendlyFailure(error.message))}</span>
+      ${conflict ? '<div class="actions"><button type="button" class="btn sm" data-act="copy-board">複製表格草稿</button><button type="button" class="btn sm" data-act="reload-board">載入最新版本</button></div>' : ""}</div>`;
+    $("#editNotice").innerHTML = edit.notice;
+  }
 }
 
 function sourceVersionsHTML(shot, supplement) {
@@ -2170,10 +2323,12 @@ function showError(message) {
 async function render() {
   const sequence = ++S.renderSequence;
   const route = parseRoute(location.hash);
+  const tablePath = route.view === "board" ? route.q.get("editTable") : null;
+  if (tablePath !== null) S.layout = "list";
   closeMenus();
   if (!S.series) return;
   const view = $("#view");
-  if (route.page !== "edit") S.edit = null;
+  if (S.edit?.kind === "board" ? tablePath !== S.edit.path : route.page !== "edit") S.edit = null;
   view.dataset.state = "loading";
   let E = null;
   const row = route.ep ? rowById(route.ep) : null;
@@ -2198,7 +2353,7 @@ async function render() {
     switch (route.view) {
       case "script": html = viewScript(...args); break;
       case "settings": html = viewSettings(...args); break;
-      case "board": html = viewBoard(...args); break;
+      case "board": html = tablePath === null ? viewBoard(...args) : viewBoardEditor(row, E, tablePath); break;
       case "prompts": html = viewPrompts(...args); break;
       case "film": html = viewFilm(...args); break;
       case "review": html = viewReview(...args); break;
@@ -2210,10 +2365,11 @@ async function render() {
   applyCss($("#topbar"));
   const viewLabel = VIEWS.find((item) => item.key === route.view)?.label || "";
   document.title = `${route.ep ? `${route.ep} ${viewLabel} · ` : ""}《${creatorTitle(S.series.title)}》· 短劇創作臺`;
-  renderInspector(row, E, route.page === "episode" && route.view === "board" ? route.arg : null);
+  renderInspector(row, E, route.view === "board" && tablePath === null ? route.arg : null);
   applyCss($("#inspector"));
   if (route.page === "episode" && route.view === "film" && E) bindFilm(context(E));
   if (route.page === "edit") await openEditor(route.q, sequence);
+  if (tablePath) await openBoardEditor(tablePath, sequence);
   if (sequence !== S.renderSequence) return;
   view.dataset.route = location.hash || "#/";
   view.dataset.state = "ready";
@@ -2290,6 +2446,25 @@ async function onClick(event) {
   if (action === "search") { openPalette(); return; }
   if (action === "theme") { S.theme = isDark() ? "light" : "dark"; local.set("theme", S.theme); applyTheme(); renderTop(parseRoute(location.hash)); return; }
   if (action === "save") { save(); return; }
+  if (action === "save-board") { saveBoard(); return; }
+  if (["board-add", "board-up", "board-down", "board-delete"].includes(action)) {
+    changeBoardRows(node.closest("[data-act]"), action);
+    return;
+  }
+  if (action === "reload-board") {
+    if (!confirm("捨棄草稿並載入來源檔的最新版本？")) return;
+    S.edit = null;
+    render();
+    return;
+  }
+  if (action === "copy-board") {
+    const line = (cells) => `| ${cells.map((cell) => cell.replace(/\|/g, "\\|").replace(/\n/g, "<br>")).join(" | ")} |`;
+    const text = S.edit.tables.map((table) => [line(SHOT_COLUMNS), line(SHOT_COLUMNS.map(() => "---")),
+      ...table.groups.flatMap((group) => [...group.rows.map((row) => line(row.cells)), ...(group.summary ? [line(group.summary)] : [])])
+    ].join("\n")).join("\n\n");
+    toast(await writeClipboard(text) ? "已複製表格草稿" : "無法存取剪貼簿，請手動複製修改內容。");
+    return;
+  }
   if (action === "close-ins") { go($("#inspector").dataset.back); return; }
   if (action === "copy-draft") { const ok = await writeClipboard($("#editor").value); toast(ok ? "已複製你的修改" : "瀏覽器拒絕了剪貼簿，請手動選中複製"); return; }
   if (action === "reload-latest") {
@@ -2333,7 +2508,10 @@ function shotHref(id) {
 function onKey(event) {
   const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || "");
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") { event.preventDefault(); openPalette(); return; }
-  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") { if (S.edit) { event.preventDefault(); save(); } return; }
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
+    if (S.edit) { event.preventDefault(); if (S.edit.kind === "board") saveBoard(); else save(); }
+    return;
+  }
   if (event.key === "Escape") {
     if (!$("#palette").hidden) { closePalette(); return; }
     if (!$("#inspector").hidden) { go($("#inspector").dataset.back); return; }
@@ -2364,6 +2542,10 @@ function onHover(event) {
 }
 
 function onHashChange() {
+  if (S.edit?.kind === "board" && S.edit.saving) {
+    history.replaceState(null, "", S.lastHash);
+    return;
+  }
   if (S.edit?.dirty && !confirm("當前修改還沒有儲存，確認離開嗎？")) {
     history.replaceState(null, "", S.lastHash);
     return;
@@ -2373,6 +2555,7 @@ function onHashChange() {
 }
 
 async function selectProject(id) {
+  if (S.edit?.kind === "board" && S.edit.saving) return;
   if (S.edit?.dirty && !confirm("當前修改還沒有儲存，確認離開嗎？")) { render(); return; }
   S.edit = null;
   $("#view").dataset.state = "loading";

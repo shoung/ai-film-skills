@@ -71,6 +71,46 @@ class ServerTests(unittest.TestCase):
             self.req('PUT',url,{'path':'other.md','content':'bad','expectedVersion':updated['version']},h)
         self.assertEqual(error.exception.code,400)
 
+    def test_storyboard_table_save_preserves_source_boundaries_and_rejects_stale_draft(self):
+        headers = {'X-Film-Token': self.token}
+        header = '|編號|修改|畫面描述|攝影機描述|聲音描述|旁白對白|時長|影片生成方式|畫面prompt|\r\n'
+        separator = '|---|---|---|---|---|---|---|---|---|\r\n'
+        prefix = '# 分鏡及說明\r\n\r\n```markdown\r\n' + header + separator + '|假鏡號|例子||||||||\r\n```\r\n\r\n'
+        subtotal = '|小計||||||7秒|||\r\n'
+        suffix = '\r\n## 說明\r\n表外文字和 | 符號。'
+        source = prefix + header + separator + '|**S01**|舊版附註|清晨||||3秒|||\r\n|S02||傍晚||||4秒|||\r\n' + subtotal + suffix
+        actual = self.root / 'board.md'
+        actual.write_bytes(source.encode('utf-8-sig'))
+        alternative = self.root / 'alternate.md'
+        alternative.write_bytes(actual.read_bytes())
+        url = '/api/storyboard-table?path=board.md'
+        doc = json.load(self.req('GET', url, headers=headers))
+        self.assertEqual(len(doc['tables']), 1)
+        group = doc['tables'][0]['groups'][0]
+        first, second = group['rows']
+        first['cells'][1] = '第一行\n第二行 | 分隔符\\|'
+        new = {'key': None, 'cells': ['S03', '夜景', '', '', '', '', '', '']}
+        # Rearrange old rows, add one, and preserve the summary and the example.
+        changes = {'expectedVersion': doc['version'], 'tables': [[[second, first, new]]]}
+        saved = json.load(self.req('PUT', url, changes, headers))
+        self.assertEqual([row['cells'][0] for row in saved['tables'][0]['groups'][0]['rows']], ['S02', 'S01', 'S03'])
+        self.assertEqual(saved['tables'][0]['groups'][0]['rows'][1]['cells'][1], first['cells'][1])
+        updated = actual.read_bytes()
+        self.assertTrue(updated.startswith((prefix + header + separator).encode('utf-8-sig')))
+        self.assertTrue(updated.endswith((subtotal + suffix).encode('utf-8')))
+        self.assertIn('| **S01** | 舊版附註 |'.encode('utf-8'), updated)
+        self.assertEqual(alternative.read_bytes(), source.encode('utf-8-sig'))
+        actual.write_bytes(updated + b'\r\nexternal edit')
+        delete = {'expectedVersion': saved['version'], 'tables': [[[]]]}
+        with self.assertRaises(urllib.error.HTTPError) as error:
+            self.req('PUT', url, delete, headers)
+        self.assertEqual(error.exception.code, 409)
+        self.assertEqual(actual.read_bytes(), updated + b'\r\nexternal edit')
+        latest = json.load(self.req('GET', url, headers=headers))
+        delete['expectedVersion'] = latest['version']
+        self.req('PUT', url, delete, headers).close()
+        self.assertEqual(actual.read_bytes(), (prefix + header + separator + subtotal + suffix).encode('utf-8-sig') + b'\r\nexternal edit')
+
     def test_original_facade_projects_episode_tree_search_and_version_alias(self):
         ep=self.root/'EP001'; ep.mkdir()
         (ep/'board.md').write_text('|編號|畫面描述|攝影機描述|聲音描述|旁白對白|時長|影片生成方式|畫面prompt|\n|---|---|---|---|---|---|---|---|\n|S01|雨夜|慢推|雨聲|無|3秒|T2VA|street|',encoding='utf-8')

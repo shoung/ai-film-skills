@@ -42,11 +42,17 @@
 
 5. 影像製作建議一併安裝 `screenplay-director`、`visual-asset-prompts`、`video-prompts`、`h3-prompt-writing`、`film-quality-control` 與 `antigravity-writer`，保留其相對目錄。共享啟動提問／SHOUNG 文字 LOGO 由導演提供，品管詳細規則、模板及檢查器由 `film-quality-control` 提供，文字創作路由由 `antigravity-writer` 規範。單獨安裝可做其原有純文字工作；缺少共享依賴時，依入口的替代規則標記限制，不能宣稱完成未執行的視覺 QA。
 
+### 每次對話首次使用的版本檢查
+
+在新的 AI 代理對話第一次使用任一 Skill 時，先比較實際安裝版本與本倉庫 `main`。有新版時，使用者可選擇先更新或沿用；同一對話切換 Skill 時沿用查核結果。若從 Git 檢出直接使用或以符號連結安裝，版本取自該檢出。獨立複製時，可在 Skill 目錄放入只含來源完整提交值的 `.ai-film-skills-revision`，更新副本時同步更新這個紀錄。 [版本查核與更新方式](skills/screenplay-director/references/skill-update-check.md)
+
 ## 原著改編與本地創作台
 
 已有小說或連載原文時，先以 `$screenplay-source-analysis` 分析指定範圍，再由 `screenplay-framework` 接續定改編方案；抽樣結論與分集候選不能當成正式定稿。索引工具只處理章界、來源變更與覆蓋檢查，原文事實及改編取捨仍需依來源與獨立審核判定。
 
-分鏡規劃可參考 [分鏡方法庫](skills/video-prompts/references/storyboard-methods.md) 與 [參考圖控制規範](skills/film-quality-control/references/reference-control.md)。新增資訊放表外，主表保持八欄；planned 掛圖計畫與 actual 實圖分開，實際生成與 25 宮格草圖的缺圖門檻不變。
+全新劇本在定大綱或撰寫正文前，先逐題確認題材、年代與世界規則、故事走向、結構及角色。以已知設定為起點，先問會影響後續選擇的一題，等回覆再繼續。整理創作綱要並確認後，再交給寫作者。連載案另檢查本集兌現、集尾鉤子的預計兌現位置，以及下集第一個行動如何承接。 [劇本啟動與確認](skills/screenplay-director/references/startup-intake.md) · [連載分集規劃與驗收](skills/screenplay-framework/references/serial-episode-planning.md)
+
+從劇本新編分鏡或重做鏡頭設計時，先依 [分鏡方法庫](skills/video-prompts/references/storyboard-methods.md#依劇本設計分鏡) 拆解場次目的、觀眾視角、戲劇節拍、切鏡理由與跨鏡狀態，再填八欄表。必要的製作說明放表外。參考素材依 [參考圖控制規範](skills/film-quality-control/references/reference-control.md) 記錄，planned 掛圖計畫與 actual 實圖分開，實際生成與 25 宮格草圖的缺圖門檻不變。
 
 以 Python 3.9 以上從本倉庫啟動創作台（不需額外套件）：
 
@@ -77,6 +83,9 @@ python skills/film-workbench/scripts/dashboard_server.py /absolute/path/to/proje
 - **生成請求為獨立單元**：一次生成請求（一段 Prompt）可包含單一鏡頭，亦可包含多個連續鏡頭。分組依據為：故事因果與敘事關聯、台詞表演動作停頓時間與介面時長可行性、目標模型與生成模式支援情況、控制精度與重抽重試成本，以及參考資產清晰度。不強制每鏡一提示詞、不設死板鏡頭數限制，亦不超出介面實際時長限制。同場景可依控制需求拆分成多個請求，蒙太奇可依因果合併為單一請求。
 - **影片生成模式**：Seedance 與 MiniMax H3 的對白鏡一律採 Ref2VA，在提示詞開頭列出角色聲線及對應音檔。無對白鏡優先採 I2VA 或 FL2VA，兩者皆無法滿足鏡頭需求才採 Ref2VA。I2VA／FL2VA／L2VA 在本流程限單一連續鏡頭。詳見 [模式選擇](skills/film-quality-control/references/mode-and-shot-rules.md#生成模式選擇)。
 - **請求自足性與時序狀態補正**：每個生成請求必須包含自身所需之風格描述、聲音語調與顯式綁定資產。特別注意：**人物或道具圖片綁定（`image_inputs`）本身不提供前一鏡的姿態或動作狀態**；跨請求參照必須在提示詞中重述必要的初始狀態，除非實際提交之首幀／接續幀（continuity frame）已提供該狀態。請求內部後向參照（後鏡參照前鏡）若有明確定義屬合法解析；外部全域風格段落不會自動生效。
+- **跨場資產連續性**：同一資產沿用穩定識別碼與核准的固定空間。跨場或跨集的造型、場景、道具變化記錄觸發、生效及解除範圍，供資產、分鏡、提示詞與品管共同核對。 [跨場資產連續性](skills/film-quality-control/references/asset-continuity.md)
+- **鎖定台詞核對**：在送生成前，以實際模型提示詞對回核准的劇本與分鏡，找出漏句、誤指派、改字、重複及順序問題。跨鏡延續與實際拆句分開記錄。 [鎖定台詞核對](skills/film-quality-control/references/locked-dialogue-reconciliation.md)
+- **1080p 單幀空間審核**：生成後安排獨立子代理查看實圖，核對人物、道具與場景的相對位置、方向、可見性和連續性。空間關係難以判讀時，按需要補鳥瞰圖、平面圖、剖面圖或人物位置圖，供核對及修圖。 [靜幀空間品管](skills/film-quality-control/references/visual-qa.md#空間核對與示意圖)
 - **提示詞風格與表演**：預設簡潔可讀、單一主動作鏈與清晰運鏡；角色行動目標、觸發點、呼吸與眼神均為創作者內在推理，非必印輸出欄位；時間節奏在需要時採用 0.5 秒網格，非每半秒皆須指令；鎖定台詞與 H3 必要欄位語法嚴格保留；製作備註置於 Prompt 外部。多情境提示詞範例請參閱 [`skills/video-prompts/SKILL.md`](skills/video-prompts/SKILL.md) 與 [`skills/h3-prompt-writing/SKILL.md`](skills/h3-prompt-writing/SKILL.md)。
 - **雙軌品管審核**：
   1. **獨立盲測審核**：僅憑該提示詞與實際提交資產／設定（完全隔離劇本隱式上下文與其他 Prompt），審查提示詞可讀性、隱式上下文洩漏、未解析參照、屬性超載與衝突。
@@ -98,6 +107,8 @@ python skills/film-quality-control/scripts/validate_package.py /absolute/path/pa
 既有劇本開發與提示詞工作流程的原始來源與署名為：**Elio_AIGC（抖音／B站）**。
 
 新增原著分析、本地創作台及本次分鏡／參考控制擴充另參考 **ZenStory AI / drama-skills**，依 MIT 授權借用與改編；固定上游版本及授權全文見 [第三方來源與授權](THIRD_PARTY_NOTICES.md)，新技能內亦保留可獨立分發的授權檔。
+
+場次拆解、切點與關鍵反應、跨場資產狀態、鎖定台詞核對，以及分集兌現與相鄰集承接，部分參考 [漫劇老李 Skill](https://github.com/lixiaoxiao9888-create/manju-laoli-skill/tree/a01e647ac10134918a5de1b18bfe9317e5541a44)（MIT），依本套件的製作流程改寫。改編範圍與授權全文見 [第三方來源與授權](THIRD_PARTY_NOTICES.md#漫劇老李-skill--short-drama-director-suite)。
 
 本次補充的缺漏提問、獨立品管、少量試作及局部修復流程，參考 [FEICAI CLUB 的 ad-storyboarder](https://github.com/feicaiclub/ad-storyboarder)（MIT）後依本倉庫工作流程重新設計。SHOUNG 為本專案的啟動文字識別，不取代原作者署名。沒有引入該倉庫的外部生成服務或執行環境依賴。
 

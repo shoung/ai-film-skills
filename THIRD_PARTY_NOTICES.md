@@ -34,3 +34,35 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## 漫劇老李 Skill / Short-Drama Director Suite
+
+- 來源：[manju-laoli-skill](https://github.com/lixiaoxiao9888-create/manju-laoli-skill)
+- 固定版本：`a01e647ac10134918a5de1b18bfe9317e5541a44`（V7.5.0-SLIM）。
+- 授權：[MIT](https://github.com/lixiaoxiao9888-create/manju-laoli-skill/blob/a01e647ac10134918a5de1b18bfe9317e5541a44/LICENSE)，Copyright (c) 2026 Short-Drama Director Suite contributors。
+- 改編範圍：將場面調度、對白接收與反應、切鏡與留鏡、跨鏡狀態承接等方法改寫為繁體中文，納入現有八欄分鏡工作流程。參考 [場面調度](https://github.com/lixiaoxiao9888-create/manju-laoli-skill/blob/a01e647ac10134918a5de1b18bfe9317e5541a44/short-drama-director/references/blocking-direction.md)、[鏡頭與表演](https://github.com/lixiaoxiao9888-create/manju-laoli-skill/blob/a01e647ac10134918a5de1b18bfe9317e5541a44/sd-storyboard-engine/references/shot-economy-and-acting.md) 與 [剪輯轉場](https://github.com/lixiaoxiao9888-create/manju-laoli-skill/blob/a01e647ac10134918a5de1b18bfe9317e5541a44/sd-qc-engine/references/editing-transition-gate.md)。
+- 延伸參考：[場景空間與狀態](https://github.com/lixiaoxiao9888-create/manju-laoli-skill/blob/a01e647ac10134918a5de1b18bfe9317e5541a44/short-drama-director/references/asset-spatial-ledger.md) 與 [連續性台帳](https://github.com/lixiaoxiao9888-create/manju-laoli-skill/blob/a01e647ac10134918a5de1b18bfe9317e5541a44/sd-qc-engine/references/continuity-ledger.md)、[劇本與提示詞台詞比對](https://github.com/lixiaoxiao9888-create/manju-laoli-skill/blob/a01e647ac10134918a5de1b18bfe9317e5541a44/sd-feed-engine/scripts/script_feed_diff.py)、[分集規劃](https://github.com/lixiaoxiao9888-create/manju-laoli-skill/blob/a01e647ac10134918a5de1b18bfe9317e5541a44/sd-script-engine/references/episode-planning.md) 與 [圓桌審閱](https://github.com/lixiaoxiao9888-create/manju-laoli-skill/blob/a01e647ac10134918a5de1b18bfe9317e5541a44/sd-script-engine/references/roundtable-review.md)。資產生效範圍、台詞逐字核對與相鄰集驗收依本套件的格式重新設計。
+
+```text
+MIT License
+
+Copyright (c) 2026 Short-Drama Director Suite contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```

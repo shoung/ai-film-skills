@@ -5,12 +5,16 @@ description: "對劇本、大綱、單集、單場或單點問題進行多視角
 
 # 劇本醫生
 
+本次對話首次使用本套件時，先由主代理完成 [版本檢查](../screenplay-director/references/skill-update-check.md)。若未安裝共用規範，查 [上游 main](https://github.com/shoung/ai-film-skills/commits/main/)，與實際安裝目錄的 Git 提交或 `.ai-film-skills-revision` 比對。確認有新版時先問要更新或沿用，版本無法驗證時簡短說明。本次對話已檢查則沿用結果。
+
 ## 文本創作分流（Writing Provider Routing）
 
 本技能涉及之多視角圓桌會診分析、診斷報告撰寫與實質修改任務清單產出，優先路由至 Google Antigravity CLI（`agy`），由 Codex 負責任務編排與報告格式檢驗，不逕自代筆撰寫診斷結論與創意修改方案。詳見 [antigravity-writer](../antigravity-writer/SKILL.md)。
 - **降級與防遞迴**：若已在 Antigravity 內部執行，直接產出會診報告，嚴禁遞迴調用；若未安裝 writer 輔助腳本但存在 `agy` 命令，直接執行無頭調用；僅在 CLI 未安裝或確認配額耗盡時降級至 Codex，或因內容過濾明確拒絕時降級至當前預設 LLM。遇驗證、權限或網路錯誤應阻擋回報，不隱蔽替換。
 
 ## 執行方式
+
+會診涉及連載分集的開場、因果、結尾或跨集連續性時，依 [連載分集規劃與驗收](../screenplay-framework/references/serial-episode-planning.md) 核對本集局部兌現、相鄰集第一動作及鉤子紀錄。大綱階段先做因果複述。已有劇本時，先隱去解說及審查資訊讀正文，再提出問題發生的集數、場次、可見證據和修正後的複查項。原著改編另核對必留內容、來源及揭露進度。單獨安裝時用現有大綱或正文完成同樣檢查，缺件標待驗。正文由具首讀條件的獨立讀者實際讀完時，才記為獨立冷讀。由製作者執行時標記為製作者自查。
 
 1. 完整讀取 [原始工作流程](references/3.劇本醫生 · 圓桌會診 Skill v1.0.txt) 後，依其規則執行；長檔需分段讀完，不得以截斷內容代替全文。
 2. 原文的「貼上本文件」在 Codex 中代表載入此參考檔；使用者可提供專案內檔案路徑，不必重貼全文。

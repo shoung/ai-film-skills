@@ -5,6 +5,8 @@ description: "Write MiniMax H3 video generation prompts for T2VA, I2VA, FL2VA, L
 
 # H3 Prompt Writing
 
+本次對話首次使用本套件時，先由主代理完成 [版本檢查](../screenplay-director/references/skill-update-check.md)。若未安裝共用規範，查 [上游 main](https://github.com/shoung/ai-film-skills/commits/main/)，與實際安裝目錄的 Git 提交或 `.ai-film-skills-revision` 比對。確認有新版時先問要更新或沿用，版本無法驗證時簡短說明。本次對話已檢查則沿用結果。
+
 新創作任務沿用 [screenplay-director 共用啟動 intake](../screenplay-director/references/startup-intake.md) 與已知決策，僅關鍵阻礙補問（每輪最多 2–3 題）。缺少共用 intake 時，全新案在對話中顯示一次 `SHOUNG`；續作、維護、交接不重複，標記不進 prompt。純文字不要求生圖；交付生成靜幀依 [film-quality-control](../film-quality-control/SKILL.md) 獨立看圖對卡，無審核者標待審，不偽造 PASS。
 
 ## 文本創作與修復路由（Antigravity CLI 優先）
@@ -23,6 +25,10 @@ Codex 負責編排、格式檢驗與結構驗證，不得改寫正文。僅在�
 
 使用者要求建立、改寫或轉換分鏡表時，讀取本地 [八欄分鏡表格式](references/storyboard-table-format.md) 與 [分鏡表模板](references/storyboard-table-template.md)，固定八欄與欄序，每列一個連續鏡頭；生成群組可在旁表中對應多列。純分鏡表任務在此分支完成，不啟動 H3 模型提示詞改寫或生成需求；純提示詞任務不自動附加分鏡表。
 
+從劇本新編分鏡，或受託重做既有稿的分鏡設計時，先依 [分鏡方法庫的場次拆解](../video-prompts/references/storyboard-methods.md#依劇本設計分鏡) 規劃再填表。若無共享方法庫，先定本場目的與觀眾何時知道什麼，再找觸發、接收者的可見反應與結果，決定哪些節拍留在同一鏡、每個切點帶來什麼。用固定物定位空間與軸線，再把場內位置換成各鏡的畫面方位。交付前依鏡序核對劇本和鎖定台詞，追查人物與道具切出時的狀態及切回時的承接，並交代有意的時空省略。只做格式轉換時，沿用原稿的鏡頭設計、順序、鏡號與鎖定台詞；純分鏡表可在模型未定時完成。
+
+若獨立安裝且需承接跨場變化，查劇本、資產卡及前場備註，在製作旁表記本場仍生效的空間與道具狀態，以及本場觸發或解除的變化。
+
 ## 生成模式選擇與聲線參考
 
 逐鏡查看分鏡表的對白與聲音欄，再依 [模式選擇規則](../film-quality-control/references/mode-and-shot-rules.md#生成模式選擇) 分組。**有角色說話或台詞的鏡頭一律用 Ref2VA**，包括畫外台詞和旁白。有可用首幀、缺聲音檔或一鏡只有一句台詞，仍選 Ref2VA。無台詞的鏡頭優先用 I2VA（首幀足以控制）或 FL2VA（需固定尾態且首尾幀可連續銜接）；兩者皆無法滿足鏡頭需求時，才改用 Ref2VA。
@@ -34,6 +40,8 @@ Codex 負責編排、格式檢驗與結構驗證，不得改寫正文。僅在�
 參考圖順序、用途、控制／不得控制範圍與掛圖計畫依 [參考圖控制規範](../film-quality-control/references/reference-control.md)。實際 `image_inputs` 只登錄已核對素材；計畫圖不當作已提交圖片，H3 欄位與模型標籤維持原規範。複雜場面與修鏡可參考 [分鏡方法庫](../video-prompts/references/storyboard-methods.md)；若單獨安裝缺少共享參考，明示限制並沿用本技能既有規則，不假稱已執行相關檢查。
 
 每個生成請求必須完全自足。僅實際隨請求提交的參考素材有效，人物或道具卡不提供先前時序狀態。各請求必須明確建立起始狀態（除非由實際提交之首幀或銜接幀提供）。請求內定義好的跨鏡回指合法，跨請求不得依賴外部隱性背景。鎖定的劇本台詞逐字保留。
+
+跨場或跨集延續的場景、人物與道具，依 [跨場資產連續性](../film-quality-control/references/asset-continuity.md) 確認本鏡有效狀態。缺共用規範時，從劇本及既有資產卡回查固定空間、變化起點與解除事件，並寫明本請求需交代的起始狀態。
 
 ## 提示詞精簡可讀與表演控制
 
@@ -47,6 +55,8 @@ Codex 負責編排、格式檢驗與結構驗證，不得改寫正文。僅在�
 1. **製作品管審核**：依 [台詞與時長審核](../film-quality-control/references/timing-and-dialogue.md) 比對台詞、動作與情緒，驗證秒數合理性。
 2. **盲審獨立請求審核**：依 [提示詞審核規範](../film-quality-control/references/prompt-review.md) 僅憑提示詞與實際提交素材檢查獨立可讀性與指令衝突。
 審片員採唯讀模式；缺獨立審片員時標記待審。純文字不捏造 PASS。
+
+有鎖定台詞時，交付可提交的提示詞及實際送生成前，依 [鎖定台詞核對](../film-quality-control/references/locked-dialogue-reconciliation.md) 對照劇本、分鏡與本次 H3 提交正文。逐句對回 `<d>` 內原台詞與說話者標記，核對順序、遺漏、重複及跨鏡片段。缺共用規範時維持這些比對，缺來源時如實列待核對。實際生成 1080p 單幀後，安排獨立子代理執行 [空間核對](../film-quality-control/references/visual-qa.md#空間核對與示意圖)。
 
 ## 模式與欄位順序
 

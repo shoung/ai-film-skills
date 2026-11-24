@@ -5,6 +5,8 @@ description: "逐句診斷劇本臺詞的七個維度，提供改寫理由、替
 
 # 臺詞專家
 
+本次對話首次使用本套件時，先由主代理完成 [版本檢查](../screenplay-director/references/skill-update-check.md)。若未安裝共用規範，查 [上游 main](https://github.com/shoung/ai-film-skills/commits/main/)，與實際安裝目錄的 Git 提交或 `.ai-film-skills-revision` 比對。確認有新版時先問要更新或沿用，版本無法驗證時簡短說明。本次對話已檢查則沿用結果。
+
 ## 文本創作分流（Writing Provider Routing）
 
 本技能涉及之實質臺詞診斷分析、改寫理由、替換清單與角色語言改寫，一律優先路由至 Google Antigravity CLI（`agy`），由 Codex 負責任務編排、格式檢驗與程式處理，不逕自代筆改寫創意內容。詳見 [antigravity-writer](../antigravity-writer/SKILL.md)。

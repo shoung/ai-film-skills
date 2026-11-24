@@ -1,9 +1,11 @@
 ---
 name: visual-asset-prompts
-description: "從劇本提取角色、場景、道具及多狀態視覺資產，生成文生圖提示詞與統一的 @資產名 清單。"
+description: "從劇本提取角色、場景、道具及多狀態視覺資產，生成文生圖提示詞與統一的 @資產名 清單，並記錄跨場資產的固定布局及狀態。"
 ---
 
 # 視覺資產提示詞
+
+本次對話首次使用本套件時，先由主代理完成 [版本檢查](../screenplay-director/references/skill-update-check.md)。若未安裝共用規範，查 [上游 main](https://github.com/shoung/ai-film-skills/commits/main/)，與實際安裝目錄的 Git 提交或 `.ai-film-skills-revision` 比對。確認有新版時先問要更新或沿用，版本無法驗證時簡短說明。本次對話已檢查則沿用結果。
 
 ## 文本創作分流（Writing Provider Routing）
 
@@ -23,6 +25,7 @@ description: "從劇本提取角色、場景、道具及多狀態視覺資產，
 ## 專案內技能銜接
 
 - 對接鏡頭前依 [參考圖控制規範](../film-quality-control/references/reference-control.md) 在表外記錄素材用途、控制與不得控制範圍；不改本技能既有資產提示詞輸出格式，不將鏡頭姿態混入純美術卡。只有文字資產提示詞時，仍是計畫素材。
+- 有會延續到後續鏡、場或集的變化時，依 [跨場資產連續性](../film-quality-control/references/asset-continuity.md) 在既有登錄或備註中記下穩定資產 ID、場景固定布局、狀態起點及解除依據，供分鏡、選圖與 QA 共用。狀態持續且改變靜態視覺識別、後續仍需穩定複用時，沿用既有規則規劃狀態圖。
 - 分鏡草圖：[storyboard-grid](../storyboard-grid/SKILL.md)；分鏡表、正式資產卡及資產圖片齊備後，可交接生成 25 宮格總覽，文字資產提示詞不能替代參考圖片。
 - 劇本總控：[screenplay-director](../screenplay-director/SKILL.md)
 - 劇本框架：[screenplay-framework](../screenplay-framework/SKILL.md)

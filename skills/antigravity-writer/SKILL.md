@@ -5,6 +5,8 @@ description: 全套件文字創作與實質修訂的第一分流提供者（Goog
 
 # Antigravity 寫作分流提供者
 
+本次對話首次使用本套件時，先由主代理完成 [版本檢查](../screenplay-director/references/skill-update-check.md)。若未安裝共用規範，查 [上游 main](https://github.com/shoung/ai-film-skills/commits/main/)，與實際安裝目錄的 Git 提交或 `.ai-film-skills-revision` 比對。確認有新版時先問要更新或沿用，版本無法驗證時簡短說明。本次對話已檢查則沿用結果。
+
 本規範定義套件所有文字產出之路由標準。依套件政策，所有劇本、大綱、台詞、分鏡提示詞、視覺描述、報告與其他文字成果（written deliverables，包含各類報告與非創意文本）及其實質修訂，一律優先採用 Google Antigravity CLI（`agy`）；Codex 專職協調編排、程式碼與品質檢驗，嚴禁擅自代筆。完整執行細節請參閱 [提供者工作流程規範](references/provider-workflow.md)。
 
 ## 核心原則

@@ -5,6 +5,8 @@ description: 原著分析與改編前置提取技能。負責建立小說章節�
 
 # 原著分析與改編前置規範 (screenplay-source-analysis)
 
+本次對話首次使用本套件時，先由主代理完成 [版本檢查](../screenplay-director/references/skill-update-check.md)。若未安裝共用規範，查 [上游 main](https://github.com/shoung/ai-film-skills/commits/main/)，與實際安裝目錄的 Git 提交或 `.ai-film-skills-revision` 比對。確認有新版時先問要更新或沿用，版本無法驗證時簡短說明。本次對話已檢查則沿用結果。
+
 本操作規範定義原著文字分析、章節索引建構、行號驗證、劇情作用逐章提取與下游改編交接之標準工作流程。所有結論都應提供可回查的分析依據，改編決策權保留給創作者。
 
 ## 1. 核心原則與界線聲明
@@ -111,7 +113,7 @@ flowchart TD
    - **爽點／高潮排序（Hook & Climax Ranking）**：核心期待感與張力點排序。
    - **人物與設定演進**：人物動機轉變與世界觀設定邊界。
    - **製作形態適配**：橫屏長劇、豎屏微短劇或動態漫之形態適配分析。
-   - **分集候選（Episode Break Candidates）**：建議之集斷點與懸念鉤子。
+   - **分集候選（Episode Break Candidates）**包含可由來源支持的局部結果、下一集可承接的動作、已確認必留事件及角色和觀眾已知資訊。依 [證據與交接規格](references/evidence-and-handoff.md#34-製作形態適配與分集候選-format--episode-breaks) 標記來源位置和待決取捨。
 
 ### 步驟六：獨立 QA 審核與交接
 1. 參照 [progress-record.md](references/progress-record.md) 完成獨立 QA 檢核表，誠實標示待審／通過／退回狀態。

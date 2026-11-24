@@ -5,6 +5,12 @@ description: "將故事靈感轉成方向卡、專案檔案、人物設定與大
 
 # 劇本框架
 
+本次對話首次使用本套件時，先由主代理完成 [版本檢查](../screenplay-director/references/skill-update-check.md)。若未安裝共用規範，查 [上游 main](https://github.com/shoung/ai-film-skills/commits/main/)，與實際安裝目錄的 Git 提交或 `.ai-film-skills-revision` 比對。確認有新版時先問要更新或沿用，版本無法驗證時簡短說明。本次對話已檢查則沿用結果。
+
+## 全新劇本的入口
+
+開發全新劇本時，先讀 [共用啟動訪談](../screenplay-director/references/startup-intake.md#全新劇本逐題訪談)。沿用上游已確認的創作綱要和授權。以原著改編立項時，若核准改編綱要與來源分析皆缺，先交 [screenplay-source-analysis](../screenplay-source-analysis/SKILL.md) 分析相關範圍。訪談要先查明可取得的事實，每回合以繁體中文提出一個會改變本案的決策，等使用者答覆再追問。確認方向摘要後才開始方向卡、角色設定或大綱。單獨安裝時依同一原則辦理，適用的核准綱要或明確委託直接開工可依授權接續。
+
 ## 文本創作分流（Writing Provider Routing）
 
 本技能涉及之方向卡、專案檔案、人物設定、故事大綱及對標 DNA 分析等實質文案創作，優先路由至 Google Antigravity CLI（`agy`），由 Codex 負責任務編排與架構檢核，不逕自代筆原創內容。詳見 [antigravity-writer](../antigravity-writer/SKILL.md)。
@@ -12,7 +18,9 @@ description: "將故事靈感轉成方向卡、專案檔案、人物設定與大
 
 ## 執行方式
 
-以原著改編立項時，先讀 [screenplay-source-analysis](../screenplay-source-analysis/SKILL.md) 的交接結果，分清原著事實、候選取捨與已確認的改編底線；保留來源位置、人物動機、關鍵因果及知情進度。候選分集須經本階段整合確認，不能直接當成正式大綱或角色卡。既有核准改編材料可直接承接，不重跑無關方向提問。
+以原著改編立項時，讀取原著分析交接中的證據與候選，沿用核准的改編底線、人物動機、關鍵因果及知情進度。由本階段根據來源與已確認方向整合候選，核定後形成正式大綱或角色卡。
+
+編排連載分集大綱或核定分集前，依 [連載分集規劃與驗收](references/serial-episode-planning.md) 核對每集局部兌現、前後集承接、鉤子與兌現紀錄。改編須逐項標示必留事件、來源位置及揭露進度，隨核定大綱交給寫作與會診。未定的候選和缺少正文的相鄰集保留其查核狀態。
 
 1. 完整讀取 [原始工作流程](references/1.劇本框架 · 項目檔案生成 Skill v2.0.txt) 後，依其規則執行；長檔需分段讀完，不得以截斷內容代替全文。
 2. 原文的「貼上本文件」在 Codex 中代表載入此參考檔；使用者可提供專案內檔案路徑，不必重貼全文。

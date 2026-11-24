@@ -7,12 +7,13 @@
 - `role`：`character_card`、`scene_card`、`prop_card`、`frame`。服裝／妝造卡亦以 character_card 登錄，id 區分其用途與狀態。
 - 正式卡加 `approved: true`，表示有實際批准依據；可另附 `approval_source` 記錄對話或檔案位置。不可代填批准。
 - frame 加 `producer_id`，為產圖代理（或使用者／外部來源）之真實識別。獨立 QA 身份不得與 producer_id 相同，未知來源應先釐清，不可留空規避。
-- 可附 `dimensions`、`outfit_state`、`scene_state`、`notes` 供人工核對；檢查器不辨識圖像像素或臉部，尺寸需實際查圖。
+- 可附 `dimensions`、`outfit_state`、`scene_state`、`notes` 供人工核對；要求 1080p 單幀時，從交付檔讀取實際寬高並記在 `dimensions` 或 QA 證據。檢查器不辨識圖像像素或臉部。
 
 ## shots
 每項包含 `id`、`reference_asset_ids`；交付靜幀時加 `frame_asset_id`。
 - 同一鏡有首尾兩張或其他關鍵幀時，以主幀在前，其他幀按時間排序列入 `additional_frame_asset_ids`，仍屬同鏡，不可為存尾幀憑空新增鏡號。每張幀均須接受獨立 QA。
 - `duration_seconds`、`outfit_state`、`scene_state`、`continuity_notes` 可附加。`reference_asset_ids` 應列出該鏡正式依據，避免僅將圖列入 assets 卻未綁定鏡頭。
+- 適用的資產狀態可在 `continuity_notes` 指向 [跨場資產連續性](asset-continuity.md) 條目、來源與生效節拍，共用穩定 ID 和固定布局。狀態圖依既有資產角色登錄，文件或示意圖可作為 QA 文字證據的引用。
 - 有正式 frame 的鏡頭在交付前至少須綁定一份正式卡；空 references 或僅列其他 frame 不能代替正式依據（若圖有人物卻僅有場景卡，獨立 QA 仍應因缺身份依據列為待審）。
 - 不是每張圖都適合首幀。正視身份卡不能直接當作劇情起始畫面；分鏡圖若僅供構圖參考，應標註為 composition_reference，不能標為 first_frame。
 
@@ -79,8 +80,9 @@
 - `frame_asset_id` 必須屬於該鏡主幀或 additional 幀；省略時預設沿用該鏡主幀。
 - `viewed_assets` 包含該鏡所有正式 reference_asset_ids 與審核當時的 SHA。
 - 鄰幀展開邏輯：按鏡序、再按同鏡幀序將正式幀展開（flatten shots then frames）；`neighbor_frames` 包含其中前後最近已提供的靜幀（包含同一鏡首尾幀，序列首尾只需實際存在的一側）。
+- 空間與狀態觀察記在 `scene`、`continuity` 對應的 `evidence` 檔。若核對了同場較早或跨集的實圖、布局／狀態條目或示意圖，證據一併記錄所用路徑、版本及可取得的雜湊。這些補充依據仍需人工核對。
 - N/A 寫成 `{"status":"not_applicable","reason":"無人物的道具特寫說明"}`，不可沒有理由。
-- 修改卡片或換 prompt 改變語意（說話者、動作起點、鏡位、鏡序或參考綁定）時，必須手動使圖像審核之 `prompt_alignment` 退回待審；時長與提示詞審核則由相應簽章檢查失效，嚴禁直接覆蓋舊 hash 假造審核。
+- 修改卡片或換 prompt 改變語意（說話者、動作起點、鏡位、鏡序或參考綁定）時，必須手動使圖像審核之 `prompt_alignment` 退回待審；布局、狀態或示意圖修正改變空間預期時，同樣使受影響的 `scene`、`continuity` 與審核整體狀態退回待審。時長與提示詞審核依相應簽章檢查失效；用實際重審版本的雜湊與新證據更新紀錄。
 
 ## 檢查器的實際邊界
 `scripts/validate_package.py` 以標準函式庫驗證連結、模式、切鏡語句、檔案／SHA 與簽章合約。草稿模式未附 `prompt_review` 或簽章不符發出 Warning；`--delivery` 模式強制要求正式 assets 存在、卡片已核准、frame 及 prompt 有獨立 pass 審核與證據檔案。機器警告需人工情境證據判定，非一律硬性阻擋。純提示詞審查不要求媒體生成。退出碼 0 代表機讀格式合規，不取代語意與畫質實質審核。所有範例均為合成格式示範，非執行通過紀錄。

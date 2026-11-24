@@ -5,6 +5,8 @@ description: 開啟本地 AI 影視創作台，以七階段介面閱讀劇本、
 
 # 本地 AI 影視創作台 (Film Workbench)
 
+本次對話首次使用本套件時，先由主代理完成 [版本檢查](../screenplay-director/references/skill-update-check.md)。若未安裝共用規範，查 [上游 main](https://github.com/shoung/ai-film-skills/commits/main/)，與實際安裝目錄的 Git 提交或 `.ai-film-skills-revision` 比對。確認有新版時先問要更新或沿用，版本無法驗證時簡短說明。本次對話已檢查則沿用結果。
+
 本地 AI 影視創作台沿用 drama-skills 原版七階段工作介面，接上本套件八欄分鏡與獨立 QA 資料。分鏡閱讀以同鏡圖片和提示詞一起顯示為優先。
 
 讀取格式以 [原生專案讀取契約](references/native-project-format.md) 為準；先辨識本套件場次、`@` 狀態資產、八欄分鏡及多檔生成請求，再兼容上游格式。不要為符合上游 parser 改寫既有創作正文。剪輯單為選用後製旁表，不作素材瀏覽或生成的必填步驟。

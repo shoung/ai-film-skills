@@ -5,71 +5,21 @@ description: "根據劇本編製八欄分鏡表，或依 Seedance／MiniMax H3 �
 
 # 影片提示詞
 
-本次對話首次使用本套件時，先由主代理完成 [版本檢查](../screenplay-director/references/skill-update-check.md)。若未安裝共用規範，查 [上游 main](https://github.com/shoung/ai-film-skills/commits/main/)，與實際安裝目錄的 Git 提交或 `.ai-film-skills-revision` 比對。確認有新版時先問要更新或沿用，版本無法驗證時簡短說明。本次對話已檢查則沿用結果。
+本次對話首次使用時，由主代理依 [版本檢查](../screenplay-director/references/skill-update-check.md) 核對一次。單獨安裝時，以實際安裝的 Git 提交或 `.ai-film-skills-revision` 比對 [上游 main](https://github.com/shoung/ai-film-skills/commits/main/)。有新版先確認是否更新，無法驗證則簡述後繼續。
 
 新創作任務沿用 [screenplay-director 共用啟動 intake](../screenplay-director/references/startup-intake.md) 與已知決策，僅關鍵資訊阻礙輸出時補問（每輪最多 2–3 題）。缺少共用 intake 時，全新案在對話中顯示一次 `SHOUNG`；續作、維護、交接不重複，標記不進 prompt。純文字不要求生圖；交付生成靜幀依 [film-quality-control](../film-quality-control/SKILL.md) 獨立看圖對卡，無審核者標待審，不偽造 PASS。
 
-## 文本創作與修復路由（Antigravity CLI 優先）
+## 選擇交付
 
-所有劇本、大綱、分鏡提示詞及實質文字修訂，優先路由至 Google Antigravity CLI (`agy`) 撰寫，詳見 [Antigravity 撰寫工作流](../antigravity-writer/SKILL.md)。
+- **八欄分鏡表**。使用 [格式](references/storyboard-table-format.md) 與 [模板](references/storyboard-table-template.md)，每列一個連續鏡頭。新編或重做鏡頭先用 [分鏡方法](references/storyboard-methods.md#依劇本設計分鏡) 確立觀眾視角、因果節拍、切點與狀態承接。格式轉換沿用原鏡號、鏡序、設計和鎖定台詞，待定項如實標示。純製表可在模型未定時完成。
+- **模型提示詞**。沿用已知模型，只有未確認時才詢問 Seedance 或 MiniMax H3。Seedance 讀 [素材與寫法](<references/03_Seedance 提示詞指南.md>)、[精簡格式](references/concise-format.md) 與 [表演控制](references/performance-control.md)，按需參考 [範例](references/format-example.md)。H3 交由 [h3-prompt-writing](../h3-prompt-writing/SKILL.md)，單獨安裝時須另載入該技能才具備 H3 專用格式。
 
-Codex 負責流程編排、格式檢驗、結構驗證與腳本測試，不得改寫創作正文。僅在未安裝 CLI 或確認配額耗盡（具體 quota 訊號，非一般 429、網路、認證、超時或權限錯誤）時降級 Codex，或因內容過濾明確拒絕時降級至當前預設 LLM。已在 Antigravity 執行環境下的工作直接完成，絕不遞迴自我調用。創作回執（`provider`、`reason`、`cli_version`、`conversation_id`）嚴格置於提示詞外部。
+## 撰寫與交付
 
-## 生成請求為獨立單元與分組準則
+新編或重做分鏡、實質撰寫或修訂提示詞，依 [antigravity-writer](../antigravity-writer/SKILL.md) 分流。單獨安裝時用 [寫作備援](references/writer-fallback.md)。純格式轉換直接處理。
 
-一次影片生成提示詞為一個獨立交付單元（Generation Request），可包含單一鏡頭或多個連續鏡頭。分組依據為：敘事與因果關係、對白與動作停頓時間、目標模型與模式可用性、控制與重抽成本、素材清晰度；絕非自動一鏡一請求或同場景必合併。八欄分鏡表維持固定欄位與每列一個連續鏡頭，生成群組可對應多列。
+依 [精簡格式的模式與分組規則](references/concise-format.md#模式與分組) 選模式。跨場或跨集持續的變化查 [資產連續性](../film-quality-control/references/asset-continuity.md)，單獨安裝時從劇本、核准卡與前場備註確認本鏡有效狀態。參考圖規劃依 [掛圖規範](../film-quality-control/references/reference-control.md)，製作旁表區分計畫和實際附件。
 
-I2VA/FL2VA/L2VA 限單連續鏡頭為本工作流程的穩定性政策，非模型能力宣稱；Ref2VA 角色與場景參考可支援多鏡。
+可提交版依 [雙軌審核](../film-quality-control/references/prompt-review.md) 執行。適用的獨立審核者先盲審請求與實際附件，再讀全劇資料審查分組、鏡頭覆蓋、台詞與時長。依 [鎖定台詞核對](../film-quality-control/references/locked-dialogue-reconciliation.md) 核對劇本、分鏡與實際正文。缺共用規範時，仍逐句核對說話者、原文、順序、跨鏡銜接和可行秒數。缺獨立證據標待審。已要求且實際生成的 1080p 單幀另做 [空間核對](../film-quality-control/references/visual-qa.md#空間核對與示意圖)。
 
-## 生成模式選擇與聲線參考
-
-本規則同時適用於 Seedance 與 MiniMax H3。逐鏡查看對白與聲音欄，有角色說話、台詞或旁白的鏡頭一律用 **Ref2VA**（所選介面的全參考影片模式）。無台詞的鏡頭優先用 **I2VA**，需固定尾態且首尾幀可連續銜接時選 **FL2VA**。兩種關鍵幀方式皆無法滿足鏡頭需求時，才改用 Ref2VA，並在製作備註寫明原因。詳見 [模式選擇規則](../film-quality-control/references/mode-and-shot-rules.md#生成模式選擇)。
-
-有發話的提示詞以參考資料區開頭，逐人寫明聲線與對應的聲音檔。按照所選介面綁定實際音訊輸入，同一角色跨鏡沿用同一音色樣本或固定文字描述。已指定的音檔可先寫入提示詞開頭，並在提示詞外列出上傳對照。未指定音檔時使用固定文字聲線，素材欄標為待補。Seedance 使用其介面提供的音訊引用標籤，H3 使用 `subject_definitions` 中的 `<Audio N>`。
-
-## 請求自足性與起始狀態
-
-每個生成請求必須完全自足。僅實際隨請求提交的參考素材有效，角色或道具卡不提供先前時序狀態。各請求必須明確建立起始狀態（除非由實際提交之首幀或銜接幀提供）。請求內定義好的跨鏡回指合法，跨請求不得依賴外部隱性背景。鎖定的劇本台詞逐字保留。
-
-場景、人物或道具的變化跨場或跨集延續時，先依 [跨場資產連續性](../film-quality-control/references/asset-continuity.md) 查明本鏡生效的狀態，再寫入模型可見的起始畫面。
-
-## 提示詞精簡可讀與表演控制
-
-本規範適用於 Seedance 及 H3。生成影片提示詞時，畫面方位、構圖與運動必須遵循 [精簡格式](references/concise-format.md) 規範，一律以觀眾視角的畫面座標為準，切鏡後即時重建方位關係。
-
-預設簡潔可讀。角色行動目標、刺激觸發、呼吸與眼神微動為構思工具，非每鏡強制列印欄位；僅在情節關鍵且具備可見性時加入時序控制。維持主動作鏈與直觀運鏡，避免堆砌鏡頭焦段與冗餘微動作。
-
-時間節拍使用時按 0.5 秒網格對齊。製作備註（群組ID、八欄對照、剪輯估值、素材登錄ID）嚴格置於可複製提示詞正文之外。所有範例均為合成格式示例，非實際生成紀錄。
-
-## 品管與雙軌審核
-
-交付可提交提示詞前，須通過雙軌審核：
-1. **製作品管審核**：依 [台詞與時長審核](../film-quality-control/references/timing-and-dialogue.md) 核對分組合理性、鏡頭覆蓋、台詞逐字對齊及秒數可行性（字數、語速、停頓、情緒、動作先後／並行）。
-2. **盲審獨立請求審核**：依 [提示詞審核規範](../film-quality-control/references/prompt-review.md)，僅憑 prompt 與實際提交素材檢驗可讀性、隱性依賴、未解析代號與指令過載。
-
-審片員採唯讀模式報告問題，不擅改文本；無獨立審片員時標記待審。純文字不強求生圖，亦不捏造 PASS。
-
-有鎖定台詞時，交付可提交的提示詞及實際送生成前，依 [鎖定台詞核對](../film-quality-control/references/locked-dialogue-reconciliation.md) 將劇本、分鏡和本次提交正文依序對照，核對說話者、原文、漏句、重複與跨鏡片段。實際生成 1080p 單幀後，安排獨立子代理執行 [空間核對](../film-quality-control/references/visual-qa.md#空間核對與示意圖)。
-
-## 分鏡表交付
-
-使用者要求建立、改寫或轉換「分鏡表」時，讀取 [八欄分鏡表格式](references/storyboard-table-format.md) 與 [分鏡表模板](references/storyboard-table-template.md)，固定八欄與欄序，每列一個連續鏡頭；生成群組可在旁表中對應多列。此分支只處理純表格，不啟動模型提示詞改寫或生成需求；純提示詞任務不自動附加分鏡表。
-
-從劇本新編分鏡，或受託重做既有稿的分鏡設計時，先依 [分鏡方法庫的場次拆解](references/storyboard-methods.md#依劇本設計分鏡) 確立場次目的與觀眾視角、可見的因果節拍、切鏡或留在同一鏡的理由、空間軸線與跨鏡狀態，再填表並依鏡序核對。只做格式轉換時，沿用原稿的鏡頭設計、順序、鏡號與鎖定台詞。
-
-處理群戲、動作場面、首尾幀或修鏡時，按需讀取 [分鏡方法庫](references/storyboard-methods.md)。參考素材規劃與掛圖依 [參考圖控制規範](../film-quality-control/references/reference-control.md)；計畫圖與真實提交素材分開，控制範圍、生成群組與 QA 仍放表外，不新增主表欄位。
-
-## 執行方式
-
-1. **判斷交付類型並確認模型**：純分鏡表依八欄規範處理；撰寫模型專用 prompt 時，沿用既有指定模型，未指定則先詢問確認（Seedance 或 MiniMax H3）。
-2. **依模型切換規則**：
-   - 使用者選 **Seedance**：讀取 [Seedance 參考指南](references/03_Seedance 提示詞指南.md) 與 [Seedance 執行文件](references/01_視頻提示詞生成SKILL_V2.0_執行主文件.md)（示例庫 [02](references/02_視頻提示詞生成SKILL_V2.0_示例庫.md) 選讀），依 [精簡格式與0.5秒規範](references/concise-format.md) 及 [表演控制](references/performance-control.md) 撰寫。
-   - 使用者選 **MiniMax H3**：改用 [h3-prompt-writing](../h3-prompt-writing/SKILL.md) 及其參考文件；不混用兩者格式。
-3. 全程使用繁體中文。模型要求的欄位名稱、標籤、時間碼或英文台詞依規範保留。未實際呼叫工具時，不宣稱已啟動獨立代理或生成影像。
-
-## 專案內技能銜接
-
-- 分鏡草圖：[storyboard-grid](../storyboard-grid/SKILL.md)；使用者要求視覺化既有分鏡表時，交由此技能生成 25 宮格草圖，須先備妥資產卡與資產圖片；純製表不自動生圖。
-- 劇本總控：[screenplay-director](../screenplay-director/SKILL.md) | 劇本寫作：[screenplay-writing](../screenplay-writing/SKILL.md)
-- 視覺資產：[visual-asset-prompts](../visual-asset-prompts/SKILL.md) | 影片提示詞：[video-prompts](../video-prompts/SKILL.md)
-- 製作品管：[film-quality-control](../film-quality-control/SKILL.md)
+已有分鏡及正式資產卡與參考圖、需要草圖時，交由 [storyboard-grid](../storyboard-grid/SKILL.md)。

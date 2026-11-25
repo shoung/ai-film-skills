@@ -1269,7 +1269,7 @@ function viewEpisode(row, E) {
     ? `<div class="poster has-media ${aspectCss ? "has-aspect" : "natural"}" ${posterStyle}><video src="${esc(mediaUrl(E.media.film))}#t=0.5" ${still ? `poster="${esc(mediaUrl(still))}"` : ""} preload="metadata" muted playsinline aria-label="成片畫面"></video><a class="btn primary play" href="#/${esc(row.id)}/film">${fillIcon("play")}播放成片 ${fmt(C.cutTotal || 0)}</a></div>`
     : C.shots.find((shot) => C.frame(shot))
       ? `<div class="poster has-media ${aspectCss ? "has-aspect" : "natural"}" ${posterStyle}><img src="${esc(mediaUrl(C.frame(C.shots.find((shot) => C.frame(shot)))))}" alt="起始幀"><a class="btn play" href="#/${esc(row.id)}/film">還沒有成片</a></div>`
-      : `<div class="poster empty-poster"><span class="ph-note">還沒有成片。剪輯單寫好、渲染之後會在這裡播放。</span></div>`;
+      : `<div class="poster empty-poster"><span class="ph-note">加入成片後可在這裡播放。</span></div>`;
   return `<div class="wrap" data-view="episode"><div class="ephome">
     <div>${poster}</div>
     <div>

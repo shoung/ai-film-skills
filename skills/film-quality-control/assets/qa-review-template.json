@@ -2,7 +2,6 @@
   "id": "填入穩定審核ID",
   "shot_id": "填入鏡號",
   "frame_asset_id": "填入該鏡的正式幀ID",
-  "frame_sha256": "",
   "reviewer_id": "",
   "reviewer_role": "independent_qa",
   "status": "pending",

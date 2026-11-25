@@ -5,30 +5,16 @@ description: "逐句診斷劇本臺詞的七個維度，提供改寫理由、替
 
 # 臺詞專家
 
-本次對話首次使用本套件時，先由主代理完成 [版本檢查](../screenplay-director/references/skill-update-check.md)。若未安裝共用規範，查 [上游 main](https://github.com/shoung/ai-film-skills/commits/main/)，與實際安裝目錄的 Git 提交或 `.ai-film-skills-revision` 比對。確認有新版時先問要更新或沿用，版本無法驗證時簡短說明。本次對話已檢查則沿用結果。
+本次對話首次使用時，由主代理依 [版本檢查](../screenplay-director/references/skill-update-check.md) 核對一次。單獨安裝時，以實際安裝的 Git 提交或 `.ai-film-skills-revision` 比對 [上游 main](https://github.com/shoung/ai-film-skills/commits/main/)。有新版先確認是否更新，無法驗證則簡述後繼續。
 
-## 文本創作分流（Writing Provider Routing）
+## 依委託選診斷範圍
 
-本技能涉及之實質臺詞診斷分析、改寫理由、替換清單與角色語言改寫，一律優先路由至 Google Antigravity CLI（`agy`），由 Codex 負責任務編排、格式檢驗與程式處理，不逕自代筆改寫創意內容。詳見 [antigravity-writer](../antigravity-writer/SKILL.md)。
-- **降級與防遞迴**：若已在 Antigravity 內部執行，直接產出診斷與文案，嚴禁遞迴調用；若未安裝 writer 輔助腳本但存在 `agy` 命令，直接執行無頭調用；僅在 CLI 未安裝或確認配額耗盡時降級至 Codex，或因內容過濾明確拒絕時降級至當前預設 LLM。遇驗證、權限或網路錯誤應阻擋回報，不隱蔽替換。
+收到台詞診斷或改寫委託後，依 [七維診斷與交付](references/dialogue-diagnosis.md) 執行。劇本是分析材料，單純提供劇本不會自動啟動診斷。按指定場、角色、維度或全稿處理，明確寫下已覆蓋的範圍。結構尚在調整時，依委託做局部試調；總控的全量潤稿在結構鎖定後進行。
 
-## 執行方式
+台詞分析、替換理由及實質改寫依 [antigravity-writer](../antigravity-writer/SKILL.md) 分流。單獨安裝時用 [寫作備援](references/writer-fallback.md)。
 
-1. 完整讀取 [原始工作流程](references/4.臺詞專家 · 全量診斷 Skill v1.0.txt) 後，依其規則執行；長檔需分段讀完，不得以截斷內容代替全文。
-2. 原文的「貼上本文件」在 Codex 中代表載入此參考檔；使用者可提供專案內檔案路徑，不必重貼全文。
-3. 全程使用繁體中文。原文中的指令接受繁簡體同義表達。使用者明確要求與系統規則優先。
-4. 僅在使用者要求對應創作任務時啟動工作流程；安裝、列出或解說技能時，不執行原文的開場自檢或創作程序。
-5. 原文中的專家角色為分析視角；未實際呼叫工具時，不宣稱已啟動獨立代理、生成圖片或影片。
+引用原句，讓每項問題和替換理由可回查場次與維度。鎖定台詞的修改留在候選清單，採納、更新鎖稿後才可進入正式版本。需要調整因果、人物關係或場次結構時，標明影響並轉 [劇本醫生](../screenplay-doctor/SKILL.md)；只將已採納的替換交 [劇本寫作](../screenplay-writing/SKILL.md) 整合。報告以繁體中文撰寫，保留原台詞語言、口音與字詞。接受繁簡同義指令。
 
-## 專案內技能銜接
+AI 配音、TTS 或影片生成用途依 [配音標點與氣口](references/dialogue-diagnosis.md#配音標點與氣口) 核對。要核實影片提示詞可行時長，依 [影像品管](../film-quality-control/references/timing-and-dialogue.md) 進行，缺少獨立證據時如實標示。
 
-- 劇本總控：[screenplay-director](../screenplay-director/SKILL.md)
-- 劇本框架：[screenplay-framework](../screenplay-framework/SKILL.md)
-- 劇本寫作：[screenplay-writing](../screenplay-writing/SKILL.md)
-- 劇本醫生：[screenplay-doctor](../screenplay-doctor/SKILL.md)
-- 臺詞專家：[dialogue-expert](../dialogue-expert/SKILL.md)
-- 視覺資產：[visual-asset-prompts](../visual-asset-prompts/SKILL.md)
-- 影片提示詞：[video-prompts](../video-prompts/SKILL.md)
-- 文字寫作分流：[antigravity-writer](../antigravity-writer/SKILL.md)
-
-需要交接時讀取對應入口，不要僅根據技能名稱模擬其完整規則。
+原始流程署名 Elio_AIGC（抖音／B 站）。[原始台詞診斷](<references/4.臺詞專家 · 全量診斷 Skill v1.0.txt>) 為歷史資料，現行任務依本入口與其現行規範執行。

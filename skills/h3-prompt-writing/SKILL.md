@@ -5,71 +5,19 @@ description: "Write MiniMax H3 video generation prompts for T2VA, I2VA, FL2VA, L
 
 # H3 Prompt Writing
 
-本次對話首次使用本套件時，先由主代理完成 [版本檢查](../screenplay-director/references/skill-update-check.md)。若未安裝共用規範，查 [上游 main](https://github.com/shoung/ai-film-skills/commits/main/)，與實際安裝目錄的 Git 提交或 `.ai-film-skills-revision` 比對。確認有新版時先問要更新或沿用，版本無法驗證時簡短說明。本次對話已檢查則沿用結果。
+本次對話首次使用時，由主代理依 [版本檢查](../screenplay-director/references/skill-update-check.md) 核對一次。單獨安裝時，以實際安裝的 Git 提交或 `.ai-film-skills-revision` 比對 [上游 main](https://github.com/shoung/ai-film-skills/commits/main/)。有新版先確認是否更新，無法驗證則簡述後繼續。
 
 新創作任務沿用 [screenplay-director 共用啟動 intake](../screenplay-director/references/startup-intake.md) 與已知決策，僅關鍵阻礙補問（每輪最多 2–3 題）。缺少共用 intake 時，全新案在對話中顯示一次 `SHOUNG`；續作、維護、交接不重複，標記不進 prompt。純文字不要求生圖；交付生成靜幀依 [film-quality-control](../film-quality-control/SKILL.md) 獨立看圖對卡，無審核者標待審，不偽造 PASS。
 
-## 文本創作與修復路由（Antigravity CLI 優先）
+## 選擇交付
 
-所有提示詞創作、劇本改編及實質文字修訂，優先路由至 Google Antigravity CLI (`agy`) 撰寫，詳見 [Antigravity 撰寫工作流](../antigravity-writer/SKILL.md)。
+- **八欄分鏡表**。使用 [格式](references/storyboard-table-format.md) 與 [模板](references/storyboard-table-template.md)。新編或重做鏡頭按該規範的場次拆解規則。格式轉換保留原鏡號、鏡序、設計與鎖定台詞。純製表可在模型未定時完成。
+- **H3 提示詞**。先讀 [精簡格式](references/concise-format.md) 與 [表演控制](references/performance-control.md)。T2VA、I2VA、FL2VA、L2VA 依 [基礎模式指南](references/base-en.txt)，Ref2VA 依 [全參考指南](references/ref-en.txt)。各模式的欄位、段序、標籤及時間戳以選定指南為準。按需查 [合成範例](references/format-example.md)。
 
-Codex 負責編排、格式檢驗與結構驗證，不得改寫正文。僅在未安裝 CLI 或確認配額耗盡（具體 quota 訊號，非一般 429、網路、認證、超時或權限錯誤）時降級 Codex，或因內容過濾明確拒絕時降級至當前預設 LLM。已在 Antigravity 執行環境下的工作直接完成，絕不遞迴自我調用。創作回執（`provider`、`reason`、`cli_version`、`conversation_id`）置於提示詞外部。
+## 撰寫與交付
 
-## 生成請求為獨立單元與分組準則
+新編或重做分鏡、實質撰寫或修訂提示詞，依 [antigravity-writer](../antigravity-writer/SKILL.md) 分流。單獨安裝時用 [寫作備援](references/writer-fallback.md)。純格式轉換直接處理。
 
-一次影片生成提示詞為一個獨立交付單元（Generation Request），可包含單一鏡頭或多個連續鏡頭。分組依據為：敘事與因果關係、對白與動作停頓時間、目標模型與模式可用性、控制與重抽成本、素材清晰度；非自動一鏡一請求或同場景必合併。
+依 [精簡格式的模式與分組規則](references/concise-format.md#模式與分組) 選模式。跨場或跨集持續的變化查 [資產連續性](../film-quality-control/references/asset-continuity.md)，單獨安裝時從劇本、核准卡與前場備註確認本鏡有效狀態。參考圖規劃依 [掛圖規範](../film-quality-control/references/reference-control.md)，製作旁表區分計畫和實際附件。
 
-八欄分鏡表每列維持一個連續鏡頭，生成群組可對應多列。I2VA/FL2VA/L2VA 限單連續鏡頭為工作流程穩定性政策，非模型能力宣稱；Ref2VA 可支援多鏡。
-
-## 純分鏡表分支
-
-使用者要求建立、改寫或轉換分鏡表時，讀取本地 [八欄分鏡表格式](references/storyboard-table-format.md) 與 [分鏡表模板](references/storyboard-table-template.md)，固定八欄與欄序，每列一個連續鏡頭；生成群組可在旁表中對應多列。純分鏡表任務在此分支完成，不啟動 H3 模型提示詞改寫或生成需求；純提示詞任務不自動附加分鏡表。
-
-從劇本新編分鏡，或受託重做既有稿的分鏡設計時，先依 [分鏡方法庫的場次拆解](../video-prompts/references/storyboard-methods.md#依劇本設計分鏡) 規劃再填表。若無共享方法庫，先定本場目的與觀眾何時知道什麼，再找觸發、接收者的可見反應與結果，決定哪些節拍留在同一鏡、每個切點帶來什麼。用固定物定位空間與軸線，再把場內位置換成各鏡的畫面方位。交付前依鏡序核對劇本和鎖定台詞，追查人物與道具切出時的狀態及切回時的承接，並交代有意的時空省略。只做格式轉換時，沿用原稿的鏡頭設計、順序、鏡號與鎖定台詞；純分鏡表可在模型未定時完成。
-
-若獨立安裝且需承接跨場變化，查劇本、資產卡及前場備註，在製作旁表記本場仍生效的空間與道具狀態，以及本場觸發或解除的變化。
-
-## 生成模式選擇與聲線參考
-
-逐鏡查看分鏡表的對白與聲音欄，再依 [模式選擇規則](../film-quality-control/references/mode-and-shot-rules.md#生成模式選擇) 分組。**有角色說話或台詞的鏡頭一律用 Ref2VA**，包括畫外台詞和旁白。有可用首幀、缺聲音檔或一鏡只有一句台詞，仍選 Ref2VA。無台詞的鏡頭優先用 I2VA（首幀足以控制）或 FL2VA（需固定尾態且首尾幀可連續銜接）；兩者皆無法滿足鏡頭需求時，才改用 Ref2VA。
-
-有說話者的 Ref2VA 提示詞在最前面的 `subject_definitions` 逐人描述聲線。有指定音檔時在同一區塊綁定對應的 `<Audio N>`，例如 `<Audio 1>：<Subject 5> (S1) 曉明的聲線參考。` 在發話處引用同一聲音檔並保留原台詞。已指定但尚未上傳的音檔，先寫好開頭的對應並於提示詞外標記待上傳。提交前依介面掛載並核對標籤。完整格式見 [Ref2VA 指南](references/ref-en.txt) 與 [對白範例](references/format-example.md)。
-
-## 請求自足性與起始狀態
-
-參考圖順序、用途、控制／不得控制範圍與掛圖計畫依 [參考圖控制規範](../film-quality-control/references/reference-control.md)。實際 `image_inputs` 只登錄已核對素材；計畫圖不當作已提交圖片，H3 欄位與模型標籤維持原規範。複雜場面與修鏡可參考 [分鏡方法庫](../video-prompts/references/storyboard-methods.md)；若單獨安裝缺少共享參考，明示限制並沿用本技能既有規則，不假稱已執行相關檢查。
-
-每個生成請求必須完全自足。僅實際隨請求提交的參考素材有效，人物或道具卡不提供先前時序狀態。各請求必須明確建立起始狀態（除非由實際提交之首幀或銜接幀提供）。請求內定義好的跨鏡回指合法，跨請求不得依賴外部隱性背景。鎖定的劇本台詞逐字保留。
-
-跨場或跨集延續的場景、人物與道具，依 [跨場資產連續性](../film-quality-control/references/asset-continuity.md) 確認本鏡有效狀態。缺共用規範時，從劇本及既有資產卡回查固定空間、變化起點與解除事件，並寫明本請求需交代的起始狀態。
-
-## 提示詞精簡可讀與表演控制
-
-讀取 [精簡格式與0.5秒規範](references/concise-format.md)、[表演控制共通規則](references/performance-control.md) 與合成示例 [format-example.md](references/format-example.md)。預設簡潔可讀，情節關鍵需要時才寫入可見時序控制，非每鏡強制列印目標、觸發、呼吸與眼神欄位。時序節拍使用 0.5 秒網格。製作備註與審核記錄置於模型欄位之外。
-
-正文依使用者語言（繁體中文），模型欄位鍵、說話者 `(S1)`、台詞語法 `<d>[Language] ...</d>`、`<Picture N>`、`<Subject N>` 及關鍵幀對齊語法嚴格保留。
-
-## 雙軌品質審核
-
-交付可提交提示詞前，須通過獨立審片員雙軌審核：
-1. **製作品管審核**：依 [台詞與時長審核](../film-quality-control/references/timing-and-dialogue.md) 比對台詞、動作與情緒，驗證秒數合理性。
-2. **盲審獨立請求審核**：依 [提示詞審核規範](../film-quality-control/references/prompt-review.md) 僅憑提示詞與實際提交素材檢查獨立可讀性與指令衝突。
-審片員採唯讀模式；缺獨立審片員時標記待審。純文字不捏造 PASS。
-
-有鎖定台詞時，交付可提交的提示詞及實際送生成前，依 [鎖定台詞核對](../film-quality-control/references/locked-dialogue-reconciliation.md) 對照劇本、分鏡與本次 H3 提交正文。逐句對回 `<d>` 內原台詞與說話者標記，核對順序、遺漏、重複及跨鏡片段。缺共用規範時維持這些比對，缺來源時如實列待核對。實際生成 1080p 單幀後，安排獨立子代理執行 [空間核對](../film-quality-control/references/visual-qa.md#空間核對與示意圖)。
-
-## 模式與欄位順序
-
-- **基礎模式（T2VA/I2VA/FL2VA/L2VA）**：讀取 `references/base-en.txt`，依序輸出：
-  1. `integrated_multimodal_description`
-  2. `overall_soundscape`
-  3. `non_diegetic_music`
-  I2VA、FL2VA、L2VA 嚴格限制為單一連續鏡頭，正文不可暗藏切鏡、反打或蒙太奇。
-- **全參考模式（Ref2VA）**：讀取 `references/ref-en.txt`，依序輸出：
-  1. `subject_definitions`
-  2. `summary`
-  3. `retention_analysis`
-  4. `detailed_description`
-  5. `overall_soundscape`
-  6. `non_diegetic_music`
-  維持跨區塊標籤一致性。
+可提交版依 [雙軌審核](../film-quality-control/references/prompt-review.md) 執行。適用的獨立審核者先盲審請求與實際附件，再讀全劇資料審查分組、鏡頭覆蓋、台詞與時長。依 [鎖定台詞核對](../film-quality-control/references/locked-dialogue-reconciliation.md) 把劇本、分鏡逐句對回實際正文的 `<d>` 與說話者標記。缺共用規範時，仍核對說話者、原文、順序、跨鏡銜接和可行秒數。缺獨立證據標待審。已要求且實際生成的 1080p 單幀另做 [空間核對](../film-quality-control/references/visual-qa.md#空間核對與示意圖)。

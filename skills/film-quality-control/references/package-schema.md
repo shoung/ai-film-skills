@@ -21,44 +21,11 @@
 每項包含 `id`、`mode`（`T2VA`、`I2VA`、`FL2VA`、`L2VA`、`Ref2VA`）、`shot_ids`、`prompt`、`duration_seconds`、`producer_id`。純提示詞任務不要求圖片 QA，但須逐段進行台詞時長與提示詞審核；若僅有分鏡表而尚未撰寫 prompt，可保持 `generations: []`。
 - **image_inputs**：每項含 `asset_id`、`role`（`first_frame`、`last_frame`、`identity_reference`、`scene_reference`、`prop_reference`、`composition_reference`）及模型所需 `label`（如 Picture 1；正文引用時必填，未引用可選）。H3 `<Subject N>` 定義由提交之 `<Picture N>` 解析。音訊／視訊參考若 package schema 尚未機讀支援，應列為待人工審核之警示並附證據，嚴禁偽報為圖片資產；機器警示需人工情境證據判定，非一律硬性阻擋。
 - **text_reference_bindings**：陣列項為 `{label, asset_id}`，供正文 `@alias` 綁定；其 `asset_id` 必須已在 `image_inputs` 中明確宣告。台詞中提及前鏡純屬劇情文本，不可視為元數據引用。
-- **timing_review**：格式如下：
-```json
-{
-  "reviewer_id": "真實獨立QA識別",
-  "reviewer_role": "independent_qa",
-  "status": "pending",
-  "generation_sha256": "審核當時的段落簽章",
-  "checks": {
-    "dialogue_alignment": "pending",
-    "delivery_feasibility": "pending",
-    "pace_balance": "pending"
-  },
-  "evidence": ["qa/G001-timing.md"]
-}
-```
-簽章計算使用 `generation_signature(generation)`：涵蓋 `{prompt, duration_seconds, shot_ids}`，以 `json.dumps(obj, sort_keys=True, ensure_ascii=False, separators=(',', ':'))` 編碼為 UTF-8 計算 SHA-256。三項 checks 均 pass 方可合格，審核者不得與 producer_id 相同。
-
-- **prompt_review**：雙軌審核紀錄，交付模式必填：
-```json
-{
-  "reviewer_id": "真實獨立QA識別",
-  "reviewer_role": "independent_qa",
-  "status": "pending",
-  "prompt_sha256": "簽章雜湊",
-  "checks": {
-    "grouping": "pending",
-    "self_contained": "pending",
-    "reference_binding": "pending",
-    "readability": "pending"
-  },
-  "production_evidence": ["qa/G001-production.md"],
-  "isolation_evidence": ["qa/G001-isolation.md"]
-}
-```
-簽章合約：`from prompt_checks import prompt_signature`，傳入 generation 與 `assets_by_id` 字典。雜湊涵蓋 `prompt`、`duration_seconds`、`mode`、`shot_ids`、`image_inputs`、`text_reference_bindings`，以及實際提交資產的 `submitted_asset_hashes: {asset_id: sha256}`。採用 `json.dumps(obj, sort_keys=True, separators=(',', ':'), ensure_ascii=False, allow_nan=False).encode('utf-8')` 計算 SHA-256。4 項 checks 通過且 `reviewer_id != producer_id` 方可為 pass。模板保留 null/pending，不填入虛構 pass。
+- **timing_review** 使用 [時長審核模板](../assets/timing-review-template.json)。簽章 `generation_sha256` 由 `generation_signature(generation)` 算出，涵蓋 `prompt`、`duration_seconds`、`shot_ids`。將這些欄位以 `json.dumps(obj, sort_keys=True, separators=(',', ':'), ensure_ascii=False, allow_nan=False)` 序列化、編碼為 UTF-8 後計算 SHA-256。三項 `checks` 均須通過，且 `reviewer_id` 與 `producer_id` 不同。
+- **prompt_review** 使用 [提示詞審核模板](../assets/prompt-review-template.json)。`prompt_sha256` 由 `prompt_checks.prompt_signature(generation, assets_by_id)` 算出，涵蓋 `prompt`、`duration_seconds`、`mode`、`shot_ids`、`image_inputs`、`text_reference_bindings`，以及當次圖片資產的 `submitted_asset_hashes: {asset_id: sha256}`，沿用上述 JSON 序列化與 SHA-256。四項 `checks` 均須通過，且 `reviewer_id` 與 `producer_id` 不同。兩軌應留獨立證據，詳見 [提示詞審核](prompt-review.md)。
 
 ## reviews
-靜幀交付通過紀錄包含以下欄位：
+草稿可用 [視覺待審模板](../assets/qa-review-template.json)。實際看圖後填入 `frame_sha256` 與證據。以下為合成的靜幀通過紀錄格式：
 ```json
 {
   "id": "QA-S001-v1",
@@ -85,4 +52,4 @@
 - 修改卡片或換 prompt 改變語意（說話者、動作起點、鏡位、鏡序或參考綁定）時，必須手動使圖像審核之 `prompt_alignment` 退回待審；布局、狀態或示意圖修正改變空間預期時，同樣使受影響的 `scene`、`continuity` 與審核整體狀態退回待審。時長與提示詞審核依相應簽章檢查失效；用實際重審版本的雜湊與新證據更新紀錄。
 
 ## 檢查器的實際邊界
-`scripts/validate_package.py` 以標準函式庫驗證連結、模式、切鏡語句、檔案／SHA 與簽章合約。草稿模式未附 `prompt_review` 或簽章不符發出 Warning；`--delivery` 模式強制要求正式 assets 存在、卡片已核准、frame 及 prompt 有獨立 pass 審核與證據檔案。機器警告需人工情境證據判定，非一律硬性阻擋。純提示詞審查不要求媒體生成。退出碼 0 代表機讀格式合規，不取代語意與畫質實質審核。所有範例均為合成格式示範，非執行通過紀錄。
+`scripts/validate_package.py` 在草稿模式檢查欄位、關聯、模式與切鏡規則，缺少時長或提示詞複核、簽章不符時發出警告。`--delivery` 另核對正式資產檔案與 SHA-256、卡片核准狀態、每張正式幀的獨立審核及證據，並要求每個生成請求的 `timing_review` 與 `prompt_review` 通過、簽章相符及證據檔案存在。機器警告由審核者依實際情境判定。退出碼 0 僅代表通過機讀檢查。

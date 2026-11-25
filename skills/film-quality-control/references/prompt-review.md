@@ -1,6 +1,6 @@
 # 提示詞審核規範：雙軌審核與獨立簽章
 
-提示詞審核（Prompt Review）旨在驗證影片生成請求之敘事完整性、工程可行性、文本自足性與模型可讀性。本規範明定審核維度、雙軌審查機制、簽章合約與證據要求。
+每個可提交的影片生成請求都需經獨立盲審與製作審核。
 
 ## 1. 雙軌審核架構與審核順序
 提示詞交付前必須通過兩條審核軌道。執行時**必須先在全新隔離環境中進行盲審獨立請求審核，隨後再進行具備全局視野的製作品管審核**。兩項審核可由同一名具備唯讀權限的獨立品管人員（`reviewer_role: "independent_qa"`）依序完成；若無可用審核員，狀態應標記為 `pending`，嚴禁偽造第二代理人或審核人證據。
@@ -23,47 +23,16 @@
 
 ## 2. 審核角色與責任隔離
 - 審核員身分標記為 `reviewer_role = "independent_qa"`，採**唯讀模式**：僅出具審核結論、問題清單與修復建議，`reviewer_id` 不得與 `producer_id` 相同，**嚴禁自行修改提示詞正文、分鏡或劇本**。
-- 提示詞修訂必須透過寫作提供者路由（參閱 [antigravity-writer](../../antigravity-writer/SKILL.md)）執行；修訂優先由 Google Antigravity CLI（`agy`）處理，僅在二進位檔缺失（`not_installed`）或確認配額耗盡（`quota_exhausted`）時降級 Codex，或因內容過濾明確拒絕（`content_filtered`）時降級當前預設 LLM，方具備降級接替之資格，而非一律假定由 `agy` 執行。修訂完成後送交審核員重新比對。
+- 實質修訂依 [本技能入口](../SKILL.md) 的寫作分流執行，完成後交審核員重審。
 - 審核紀錄、品管憑據與製作備忘保存在獨立 QA 報告中，嚴格置於模型提示詞正文之外。
 
-## 3. 結構檢查 vs 語意檢查
-- **結構檢查（Structure Check）**：`scripts/validate_package.py` 驗證機讀欄位、鏡號、模式門檻與簽章。純提示詞 QA 不要求圖像素材或媒體生成。
-- **語意檢查（Semantic Check）**：由獨立審核檢驗文字邏輯與可行性。結構通過不等於語意通過，亦不可虛構 PASS。
-- **執行策略**：草稿模式（`validate_package.py package.json`）缺少 `prompt_review` 或簽章不符時發出 Warning；交付模式（`--delivery`）強制要求 `prompt_review` 為 `pass` 且簽章匹配。機器警告需人工證據判定，不必然一律阻擋。
+## 3. 審核紀錄與失效
 
-## 4. 簽章合約：`prompt_signature`
-為防止提示詞正文、秒數、模式或綁定資產被修改後沿用舊審核，系統使用簽章核對：
-```python
-from prompt_checks import prompt_signature
-sig = prompt_signature(generation, assets_by_id)
-```
-計算規範：
-1. 傳入 `generation` 與 `assets_by_id` 字典。
-2. 涵蓋欄位：`prompt`、`duration_seconds`、`mode`、`shot_ids`、`image_inputs`、`text_reference_bindings`，以及由實際提交資產提取之雜湊字典 `submitted_asset_hashes: {asset_id: sha256}`。
-3. 排序後以 UTF-8 編碼為標準 JSON（`json.dumps(obj, sort_keys=True, separators=(',', ':'), ensure_ascii=False, allow_nan=False)`）計算 SHA-256。
-4. 審核通過時寫入 `prompt_review.prompt_sha256`。任何欄位更動或資產換版皆使簽章失效。
+以 [提示詞審核模板](../assets/prompt-review-template.json) 保存 `prompt_review`。草稿缺審核或簽章不符時有警告。交付模式要求 `pass`、現行簽章及真實證據，欄位及簽章計算見 [登錄格式](package-schema.md#generations)。
 
-## 5. 證據路徑分離
-審核紀錄必須包含獨立證據檔案路徑：
-- `production_evidence`：記錄製作品管審核觀察（例如 `["qa/G001-production.md"]`）。
-- `isolation_evidence`：記錄盲審獨立請求審核觀察（例如 `["qa/G001-isolation.md"]`）。
+- `production_evidence` 記錄製作審核觀察、群組、版本及鎖定台詞對帳。
+- `isolation_evidence` 記錄只依當次提示詞、附件與參數得出的獨立盲審觀察。
 
-鎖定台詞對照表隨 `production_evidence` 保留，於製作審核階段出示。提示詞簽章涵蓋本次審核的正文與請求參數，台詞對照表另記鎖稿及分鏡版本。
+純提示詞交付無需生成靜幀。宣稱可提交的圖像模式須核對本次實際要使用的附件，計畫素材依 [參考圖控制](reference-control.md) 登錄。工具警告由審核者根據實際證據判定。
 
-## 6. 示例（合成格式示範，非執行通過紀錄）
-```json
-{
-  "reviewer_id": "獨立QA識別",
-  "reviewer_role": "independent_qa",
-  "status": "pending",
-  "prompt_sha256": "簽章雜湊",
-  "checks": {
-    "grouping": "pending",
-    "self_contained": "pending",
-    "reference_binding": "pending",
-    "readability": "pending"
-  },
-  "production_evidence": ["qa/G001-production.md"],
-  "isolation_evidence": ["qa/G001-isolation.md"]
-}
-```
+提示詞、模式、分組、時長或素材綁定改動後重審。鎖稿、分鏡與音訊／視訊等人工核對來源另記版本，變更時依影響範圍更新審核。

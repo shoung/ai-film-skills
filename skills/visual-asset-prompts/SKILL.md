@@ -5,37 +5,17 @@ description: "從劇本提取角色、場景、道具及多狀態視覺資產，
 
 # 視覺資產提示詞
 
-本次對話首次使用本套件時，先由主代理完成 [版本檢查](../screenplay-director/references/skill-update-check.md)。若未安裝共用規範，查 [上游 main](https://github.com/shoung/ai-film-skills/commits/main/)，與實際安裝目錄的 Git 提交或 `.ai-film-skills-revision` 比對。確認有新版時先問要更新或沿用，版本無法驗證時簡短說明。本次對話已檢查則沿用結果。
+本次對話首次使用時，由主代理依 [版本檢查](../screenplay-director/references/skill-update-check.md) 核對一次。單獨安裝時，以實際安裝的 Git 提交或 `.ai-film-skills-revision` 比對 [上游 main](https://github.com/shoung/ai-film-skills/commits/main/)。有新版先確認是否更新，無法驗證則簡述後繼續。
 
-## 文本創作分流（Writing Provider Routing）
+用劇本、專案設定和正式參考提取角色、場景、道具及需重用的視覺狀態，交付文生圖提示詞和可綁定圖像的 `@資產名`。正文依 [寫作分流](../antigravity-writer/SKILL.md) 或 [單獨安裝備援](references/writer-fallback.md) 撰寫，資產 ID、格式及版本由執行端核對。
 
-本技能涉及之文生圖提示詞（角色、場景、道具、狀態）與 `@資產名` 視覺特徵描述正文，優先路由至 Google Antigravity CLI（`agy`），由 Codex 負責資產 ID 清單核對、登錄檔維護與格式驗證，不逕自代寫視覺描述。詳見 [antigravity-writer](../antigravity-writer/SKILL.md)。
-- **降級與防遞迴**：若已在 Antigravity 內部執行，直接產出提示詞，嚴禁遞迴調用；若未安裝 writer 輔助腳本但存在 `agy` 命令，直接執行無頭調用；僅在 CLI 未安裝或確認配額耗盡時降級至 Codex，或因內容過濾明確拒絕時降級至當前預設 LLM。遇驗證、權限或網路錯誤應阻擋回報，不隱蔽替換。
+## 執行
 
-## 執行方式
+1. 依 [共用啟動 intake](../screenplay-director/references/startup-intake.md) 沿用既定資料。獨立安裝缺少共用規範時，全新案在對話中顯示一次 `SHOUNG`，只有關鍵缺項才補問，每輪最多 2–3 題。續作、維護及交接沿用既有決策，識別標記留在對話中。
+2. 依 [資產提取與狀態規則](references/asset-method.md) 選資產、風格和有效狀態。預設以繁體中文撰寫，沿用使用者指定的語言、劇本鎖定內容與專案術語。
+3. 用 [資產庫模板](assets/asset-library-template.md) 交付。核對重要視覺資產、重用狀態、比例、唯一名稱及引用範圍。純文字提示詞直接交付。要求交付生成圖像時，依 [影像品管](../film-quality-control/SKILL.md) 逐圖獨立看圖，缺少共享品管規則或可看圖的獨立審核者時標待審。
 
-新創作任務沿用 [screenplay-director 的共用啟動 intake](../screenplay-director/references/startup-intake.md)，不重問已知決策；獨立安裝缺少該檔時，僅為全新案在對話中顯示一次 `SHOUNG`，每輪最多補問 2–3 個關鍵缺項；續作、維護、交接不重複。標記不進 prompt 或媒體。純文字資產提示詞不要求生圖。若本次實際交付生成靜幀，依 [film-quality-control](../film-quality-control/SKILL.md) 逐圖獨立看圖與對卡；缺 QC 或獨立審核者時不得宣稱 PASS。
+## 製作交接
 
-1. 完整讀取 [原始工作流程](references/2.視覺資產提示詞生成SKILL_V1.0.md) 後，依其規則執行；長檔需分段讀完，不得以截斷內容代替全文。
-2. 原文的「貼上本文件」在 Codex 中代表載入此參考檔；使用者可提供專案內檔案路徑，不必重貼全文。
-3. 全程使用繁體中文。原文中的指令接受繁簡體同義表達。使用者明確要求與系統規則優先。
-4. 僅在使用者要求對應創作任務時啟動工作流程；安裝、列出或解說技能時，不執行原文的開場自檢或創作程序。
-5. 原文中的專家角色為分析視角；未實際呼叫工具時，不宣稱已啟動獨立代理、生成圖片或影片。
-
-## 專案內技能銜接
-
-- 對接鏡頭前依 [參考圖控制規範](../film-quality-control/references/reference-control.md) 在表外記錄素材用途、控制與不得控制範圍；不改本技能既有資產提示詞輸出格式，不將鏡頭姿態混入純美術卡。只有文字資產提示詞時，仍是計畫素材。
-- 有會延續到後續鏡、場或集的變化時，依 [跨場資產連續性](../film-quality-control/references/asset-continuity.md) 在既有登錄或備註中記下穩定資產 ID、場景固定布局、狀態起點及解除依據，供分鏡、選圖與 QA 共用。狀態持續且改變靜態視覺識別、後續仍需穩定複用時，沿用既有規則規劃狀態圖。
-- 分鏡草圖：[storyboard-grid](../storyboard-grid/SKILL.md)；分鏡表、正式資產卡及資產圖片齊備後，可交接生成 25 宮格總覽，文字資產提示詞不能替代參考圖片。
-- 劇本總控：[screenplay-director](../screenplay-director/SKILL.md)
-- 劇本框架：[screenplay-framework](../screenplay-framework/SKILL.md)
-- 劇本寫作：[screenplay-writing](../screenplay-writing/SKILL.md)
-- 劇本醫生：[screenplay-doctor](../screenplay-doctor/SKILL.md)
-- 臺詞專家：[dialogue-expert](../dialogue-expert/SKILL.md)
-- 視覺資產：[visual-asset-prompts](../visual-asset-prompts/SKILL.md)
-- 影片提示詞：[video-prompts](../video-prompts/SKILL.md)
-- 文字寫作分流：[antigravity-writer](../antigravity-writer/SKILL.md)
-
-需要交接時讀取對應入口，不要僅根據技能名稱模擬其完整規則。
-
-轉交影片生成 prompt 時，提醒下游由只讀審片員做 [台詞與時長審核](../film-quality-control/references/timing-and-dialogue.md)；單純資產提取不因此改寫台詞或強迫生成影片。
+- 提示詞與素材計畫按 [參考圖控制規範](../film-quality-control/references/reference-control.md) 記錄；使用實圖時再核對檔案與控制範圍。分鏡需要視覺草圖時，在分鏡表、正式資產卡及實圖齊備後交給 [25 宮格分鏡草圖](../storyboard-grid/SKILL.md)。
+- 以 [跨場資產連續性](../film-quality-control/references/asset-continuity.md) 記錄穩定 ID、固定布局、變化起點及解除依據；共享文件缺少時，把這些項目記入現有資產登錄或製作備註。視覺卡描述外觀及空間，鏡頭調度與表演資料交給 [影片提示詞](../video-prompts/SKILL.md)。

@@ -11,7 +11,7 @@ description: "從靈感到可執行劇本的流程總控；用於階段判斷、
 
 收到小說、連載或原著檔案而尚未完成來源分析時，先交 [screenplay-source-analysis](../screenplay-source-analysis/SKILL.md) 建立有原文位置可回查的分析與分集候選，再交 [screenplay-framework](../screenplay-framework/SKILL.md) 定改編方案。已有核准改編綱要時直接接續，沿用已知的來源證據與改編底線。
 
-開始全新劇本時，先依 [啟動訪談](references/startup-intake.md#全新劇本逐題訪談) 逐題確認，再將核准或授權的創作方向交給下游。使用者已有足以支撐本次交付的核准綱要時，直接承接。新創作開場依 [共用識別標記規則](references/startup-intake.md#識別標記) 在對話中顯示 [SHOUNG 標記檔](assets/shoung-logo.txt) 完整內容一次。續作、既有劇本或局部修訂沿用既定決策，只補問本次的關鍵缺項。其他創作與製作的 2–3 題補問規則見 [共用啟動說明](references/startup-intake.md#其他創作與製作的補問)。
+開始全新劇本時，先依 [啟動訪談](references/startup-intake.md#全新劇本分輪訪談) 分輪確認。把可以獨立回答的關鍵問題同輪提出，等回覆再問需要這些答案的後續問題，最後將核准或授權的創作方向交給下游。使用者已有足以支撐本次交付的核准綱要時，直接承接。新創作開場依 [共用識別標記規則](references/startup-intake.md#識別標記) 在對話中顯示 [SHOUNG 標記檔](assets/shoung-logo.txt) 完整內容一次。續作、既有劇本或局部修訂沿用既定決策，只補問本次的關鍵缺項。其他創作與製作的 2–3 題補問規則見 [共用啟動說明](references/startup-intake.md#其他創作與製作的補問)。
 
 ## 文本創作分流（Writing Provider Routing）
 

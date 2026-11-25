@@ -9,7 +9,7 @@ description: "將故事靈感轉成方向卡、專案檔案、人物設定與大
 
 ## 全新劇本的入口
 
-開發全新劇本時，先讀 [共用啟動訪談](../screenplay-director/references/startup-intake.md#全新劇本逐題訪談)。沿用上游已確認的創作綱要和授權。以原著改編立項時，若核准改編綱要與來源分析皆缺，先交 [screenplay-source-analysis](../screenplay-source-analysis/SKILL.md) 分析相關範圍。訪談要先查明可取得的事實，每回合以繁體中文提出一個會改變本案的決策，等使用者答覆再追問。確認方向摘要後才開始方向卡、角色設定或大綱。單獨安裝時依同一原則辦理，適用的核准綱要或明確委託直接開工可依授權接續。
+開發全新劇本時，先讀 [共用啟動訪談](../screenplay-director/references/startup-intake.md#全新劇本分輪訪談)。沿用上游已確認的創作綱要和授權。以原著改編立項時，若核准改編綱要與來源分析皆缺，先交 [screenplay-source-analysis](../screenplay-source-analysis/SKILL.md) 分析相關範圍。單獨安裝時，先查可取得的資料，再以繁體中文把可獨立回答的關鍵問題列在同一輪，首輪通常 2–4 題，各題附建議方向與理由。若只有一個前提能先決定，就先問一題。等使用者答覆，才問以前輪答案為前提的問題。確認方向摘要後才開始方向卡、角色設定或大綱，已有適用的核准綱要或明確委託時依授權接續。
 
 ## 文本創作分流（Writing Provider Routing）
 

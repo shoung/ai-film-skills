@@ -50,7 +50,7 @@
 
 已有小說或連載原文時，先以 `$screenplay-source-analysis` 分析指定範圍，再由 `screenplay-framework` 接續定改編方案；抽樣結論與分集候選不能當成正式定稿。索引工具只處理章界、來源變更與覆蓋檢查，原文事實及改編取捨仍需依來源與獨立審核判定。
 
-全新劇本在定大綱或撰寫正文前，先逐題確認題材、年代與世界規則、故事走向、結構及角色。以已知設定為起點，先問會影響後續選擇的一題，等回覆再繼續。整理創作綱要並確認後，再交給寫作者。連載案另檢查本集兌現、集尾鉤子的預計兌現位置，以及下集第一個行動如何承接。 [劇本啟動與確認](skills/screenplay-director/references/startup-intake.md) · [連載分集規劃與驗收](skills/screenplay-framework/references/serial-episode-planning.md)
+全新劇本在定大綱或撰寫正文前，先分輪確認題材、年代與世界規則、故事走向、結構及角色。首輪通常 2–4 題，同輪列出可獨立回答的問題與建議，等回覆後再追問有依賴的決策。問到方向足以開工後，整理創作綱要並確認，再交給寫作者。連載案另檢查本集兌現、集尾鉤子的預計兌現位置，以及下集第一個行動如何承接。 [劇本啟動與確認](skills/screenplay-director/references/startup-intake.md#全新劇本分輪訪談) · [連載分集規劃與驗收](skills/screenplay-framework/references/serial-episode-planning.md)
 
 從劇本新編分鏡或重做鏡頭設計時，先依 [分鏡方法庫](skills/video-prompts/references/storyboard-methods.md#依劇本設計分鏡) 拆解場次目的、觀眾視角、戲劇節拍、切鏡理由與跨鏡狀態，再填八欄表。必要的製作說明放表外。參考素材依 [參考圖控制規範](skills/film-quality-control/references/reference-control.md) 記錄，planned 掛圖計畫與 actual 實圖分開，實際生成與 25 宮格草圖的缺圖門檻不變。
 
